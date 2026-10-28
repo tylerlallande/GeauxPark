@@ -4,14 +4,14 @@ Help students and football fans find parking before arriving at busy locations.
 
 #  Geaux Park
 
-**Geaux Park** is a parking finder website designed to help users discover nearby parking locations quickly and conveniently. The goal is to make parking easier by providing a simple, user-friendly interface where users can explore parking options and find locations that fit their needs.
+**Geaux Park** is an Android app built with Flutter that helps users discover nearby parking locations quickly and conveniently. The goal is to make parking easier by providing a simple, user-friendly interface where users can explore parking options and find locations that fit their needs.
 
 ## Features
 
 - **Parking Search:** Find parking locations in your desired area.
 - **Interactive Map:** Explore parking locations visually.
 - **Location Details:** View information about available parking options.
-- **User-Friendly Interface:** Navigate the website with a clean, modern design.
+- **User-Friendly Interface:** Navigate the app with a clean, modern design.
 - **Responsive Design:** Designed with usability across different screen sizes in mind.
 
 ##  Project Goals
@@ -20,7 +20,10 @@ The goal of Geaux Park is to simplify the parking experience by making it easier
 
 ## Technologies
 
-Technologies will be updated as development progresses.
+- App: Flutter (Dart), Android
+- Builds: GitHub Actions
+
+### Team
 
 - Frontend: Tyler Lallande
 - Backend: Abdul Muttal 
@@ -32,23 +35,31 @@ Technologies will be updated as development progresses.
 
 ### Prerequisites
 
-Install the tools required by the project's technology stack.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (stable channel)
+- Android Studio or the Android SDK, plus an Android phone or emulator
 
 ### Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone <your-repository-url>
+   git clone https://github.com/tylerlallande/GeauxPark.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd geaux-park
+   cd GeauxPark
    ```
 
-3. Follow the setup instructions for the frontend and backend once they are configured.
+3. Install dependencies and run the app:
+
+   ```bash
+   flutter pub get
+   flutter run
+   ```
+
+4. Before opening a pull request, run `flutter analyze` and `flutter test`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and review workflow.
 
 ## Future Improvements
 
