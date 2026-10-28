@@ -1,4 +1,6 @@
 # GeauxPark
+[![Build](https://github.com/tylerlallande/GeauxPark/actions/workflows/build.yml/badge.svg)](https://github.com/tylerlallande/GeauxPark/actions/workflows/build.yml)
+
 Help students and football fans find parking before arriving at busy locations.
 
 
