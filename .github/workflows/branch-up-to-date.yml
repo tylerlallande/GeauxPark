@@ -1,0 +1,32 @@
+name: Branch policy
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  up-to-date:
+    name: Feature branch contains latest main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch main
+        run: git fetch --no-tags origin main:refs/remotes/origin/main
+
+      - name: Verify main is an ancestor
+        run: |
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "This branch is behind main. Run:"
+            echo "  git fetch origin"
+            echo "  git rebase origin/main"
+            echo "Resolve conflicts during the rebase, rerun tests, and push with --force-with-lease."
+            exit 1
+          fi
