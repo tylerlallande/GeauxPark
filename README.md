@@ -1,6 +1,8 @@
 # GeauxPark
 [![Build](https://github.com/tylerlallande/GeauxPark/actions/workflows/build.yml/badge.svg)](https://github.com/tylerlallande/GeauxPark/actions/workflows/build.yml)
 
+**Task Board:** https://github.com/users/BrandonAvila76/projects/1 (milestones: MVP Nov 6, Final Nov 20)
+
 Help students and football fans find parking before arriving at busy locations.
 
 
