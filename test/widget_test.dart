@@ -1,30 +1,58 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:geauxpark/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('home screen presents organized parking discovery sections', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const GeauxParkApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('GeauxPark'), findsOneWidget);
+    expect(find.text('Find your parking'), findsOneWidget);
+    expect(find.text('Quick filters'), findsOneWidget);
+    expect(find.text('Game-day parking'), findsOneWidget);
+    expect(find.text('Parking near LSU'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.scrollUntilVisible(
+      find.text('Union Square Garage'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Union Square Garage'), findsOneWidget);
+  });
+
+  testWidgets('bottom navigation tabs are labeled and selectable', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const GeauxParkApp());
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Map'), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+
+    await tester.tap(find.text('Map'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Parking map'), findsOneWidget);
+  });
+
+  testWidgets('parking search filters the visible results', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const GeauxParkApp());
+
+    await tester.enterText(find.byType(SearchBar), 'Nicholson');
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Nicholson Gateway'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(find.text('Nicholson Gateway'), findsOneWidget);
+    expect(find.text('Union Square Garage'), findsNothing);
   });
 }
