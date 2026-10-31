@@ -1,8 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('saved parking persists after restart and can be removed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byTooltip('Save Union Square Garage'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byTooltip('Save Union Square Garage'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Unsave Union Square Garage'), findsOneWidget);
+    await tester.tap(find.text('Saved'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 saved location'), findsOneWidget);
+    expect(find.text('Union Square Garage'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saved'));
+    await tester.pumpAndSettle();
+    expect(find.text('Union Square Garage'), findsOneWidget);
+    await tester.tap(find.byTooltip('Unsave Union Square Garage'));
+    await tester.pumpAndSettle();
+    expect(find.text('No saved parking yet'), findsOneWidget);
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getStringList('saved_parking_lot_ids'), isEmpty);
+    await tester.tap(find.text('Find parking'));
+    await tester.pumpAndSettle();
+    expect(find.text('Find your parking'), findsOneWidget);
+  });
+
   testWidgets('home screen presents organized parking discovery sections', (
     WidgetTester tester,
   ) async {

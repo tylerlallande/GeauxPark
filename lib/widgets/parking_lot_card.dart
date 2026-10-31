@@ -3,10 +3,18 @@ import 'package:flutter/material.dart';
 import '../models/parking_lot.dart';
 
 class ParkingLotCard extends StatelessWidget {
-  const ParkingLotCard({super.key, required this.lot, required this.onTap});
+  const ParkingLotCard({
+    super.key,
+    required this.lot,
+    required this.onTap,
+    required this.isSaved,
+    required this.onToggleSaved,
+  });
 
   final ParkingLot lot;
   final VoidCallback onTap;
+  final bool isSaved;
+  final VoidCallback? onToggleSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +85,14 @@ class ParkingLotCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded),
+              IconButton(
+                tooltip: isSaved ? 'Unsave ${lot.name}' : 'Save ${lot.name}',
+                isSelected: isSaved,
+                onPressed: onToggleSaved,
+                color: colors.primary,
+                icon: const Icon(Icons.bookmark_border_rounded),
+                selectedIcon: const Icon(Icons.bookmark_rounded),
+              ),
             ],
           ),
         ),

@@ -7,7 +7,14 @@ import '../widgets/parking_lot_card.dart';
 enum ParkingFilter { all, available, free, accessible }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    required this.savedLotIds,
+    required this.onToggleSaved,
+  });
+
+  final Set<String> savedLotIds;
+  final ValueChanged<ParkingLot>? onToggleSaved;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -123,6 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
               itemCount: _visibleLots.length,
               itemBuilder: (context, index) => ParkingLotCard(
                 lot: _visibleLots[index],
+                isSaved: widget.savedLotIds.contains(_visibleLots[index].id),
+                onToggleSaved: widget.onToggleSaved == null
+                    ? null
+                    : () => widget.onToggleSaved!(_visibleLots[index]),
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
