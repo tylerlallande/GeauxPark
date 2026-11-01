@@ -11,10 +11,12 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.savedLotIds,
     required this.onToggleSaved,
+    required this.onLotSelected,
   });
 
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot>? onToggleSaved;
+  final ValueChanged<ParkingLot> onLotSelected;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -134,15 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onToggleSaved: widget.onToggleSaved == null
                     ? null
                     : () => widget.onToggleSaved!(_visibleLots[index]),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${_visibleLots[index].name} details are coming next.',
-                      ),
-                    ),
-                  );
-                },
+                onTap: () => widget.onLotSelected(_visibleLots[index]),
               ),
               separatorBuilder: (_, _) => const SizedBox(height: 12),
             ),

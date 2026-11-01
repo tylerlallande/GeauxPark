@@ -66,6 +66,34 @@ The goal of Geaux Park is to simplify the parking experience by making it easier
 
 4. Before opening a pull request, run `flutter analyze` and `flutter test`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and review workflow.
 
+### Run on macOS
+
+```bash
+flutter run -d macos -t lib/main.dart
+```
+
+### Preview on a phone over local Wi-Fi
+
+Start the Flutter web server on the Mac:
+
+```bash
+flutter run -d web-server \
+  --web-hostname 0.0.0.0 \
+  --web-port 8080 \
+  -t lib/main.dart
+```
+
+Find the Mac's Wi-Fi address:
+
+```bash
+ipconfig getifaddr en0
+```
+
+With the phone connected to the same Wi-Fi network, open
+`http://<mac-ip-address>:8080` in its browser. Keep the terminal running while
+using the preview. If macOS asks whether to allow incoming connections, allow
+them for Flutter/Dart.
+
 ## Future Improvements
 
 - Integrate live parking availability.

@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/parking_lot.dart';
+import 'repositories/demo_parking_repository.dart';
+import 'repositories/parking_repository.dart';
 import 'screens/home_screen.dart';
+import 'screens/parking_details_screen.dart';
 import 'screens/placeholder_screen.dart';
 import 'screens/saved_screen.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({
+    super.key,
+    this.parkingRepository = const DemoParkingRepository(),
+  });
+
+  final ParkingRepository parkingRepository;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -51,9 +59,9 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  Future<void> _toggleSaved(ParkingLot lot) async {
+  Future<bool> _toggleSaved(ParkingLot lot) async {
     final preferences = _preferences;
-    if (preferences == null || _saving) return;
+    if (preferences == null || _saving) return false;
     final nextIds = {..._savedLotIds};
     if (!nextIds.remove(lot.id)) nextIds.add(lot.id);
     setState(() => _saving = true);
@@ -63,18 +71,34 @@ class _AppShellState extends State<AppShell> {
         nextIds.toList()..sort(),
       );
       if (!saved) throw StateError('Could not save parking');
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _savedLotIds = nextIds);
+      return true;
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not update saved parking. Try again.'),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update saved parking. Try again.'),
+          ),
+        );
+      }
+      return false;
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  void _openParkingDetails(ParkingLot lot) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ParkingDetailsScreen(
+          lot: lot,
+          repository: widget.parkingRepository,
+          initiallySaved: _savedLotIds.contains(lot.id),
+          onToggleSaved: _preferences == null ? null : _toggleSaved,
+        ),
+      ),
+    );
   }
 
   static const _destinations = <NavigationDestination>[
@@ -106,6 +130,7 @@ class _AppShellState extends State<AppShell> {
       HomeScreen(
         savedLotIds: _savedLotIds,
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
+        onLotSelected: _openParkingDetails,
       ),
       const PlaceholderScreen(
         icon: Icons.map_outlined,
@@ -119,6 +144,7 @@ class _AppShellState extends State<AppShell> {
         onRetry: _loadSavedLots,
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
         onBrowseParking: () => setState(() => _selectedIndex = 0),
+        onLotSelected: _openParkingDetails,
       ),
       const PlaceholderScreen(
         icon: Icons.person_outline_rounded,

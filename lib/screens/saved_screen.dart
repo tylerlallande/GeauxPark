@@ -13,6 +13,7 @@ class SavedScreen extends StatelessWidget {
     required this.onRetry,
     required this.onToggleSaved,
     required this.onBrowseParking,
+    required this.onLotSelected,
   });
 
   final Set<String> savedLotIds;
@@ -21,6 +22,7 @@ class SavedScreen extends StatelessWidget {
   final VoidCallback onRetry;
   final ValueChanged<ParkingLot>? onToggleSaved;
   final VoidCallback onBrowseParking;
+  final ValueChanged<ParkingLot> onLotSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -108,11 +110,7 @@ class SavedScreen extends StatelessWidget {
                   onToggleSaved: onToggleSaved == null
                       ? null
                       : () => onToggleSaved!(lot),
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${lot.name} details are coming next.'),
-                    ),
-                  ),
+                  onTap: () => onLotSelected(lot),
                 );
               },
             ),
