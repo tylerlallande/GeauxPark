@@ -24,21 +24,38 @@ class ParkingLotCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 56,
-                height: 72,
+                width: 58,
+                height: 76,
                 decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(16),
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  Icons.local_parking_rounded,
-                  color: colors.onPrimaryContainer,
-                  size: 30,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.local_parking_rounded,
+                      color: colors.onPrimary,
+                      size: 30,
+                    ),
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: colors.secondary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 14),
@@ -53,7 +70,30 @@ class ParkingLotCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: lot.spacesAvailable > 0
+                            ? colors.tertiary.withValues(alpha: 0.1)
+                            : colors.errorContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        lot.spacesAvailable > 0 ? 'OPEN NOW' : 'FULL',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: lot.spacesAvailable > 0
+                              ? colors.tertiary
+                              : colors.onErrorContainer,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       lot.address,
                       maxLines: 1,
@@ -77,7 +117,7 @@ class ParkingLotCard extends StatelessWidget {
                         _LotFact(
                           icon: Icons.directions_car_filled_outlined,
                           text: '${lot.spacesAvailable} spots',
-                          color: const Color(0xFF277A4A),
+                          color: colors.tertiary,
                         ),
                       ],
                     ),

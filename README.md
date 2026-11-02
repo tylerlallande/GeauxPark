@@ -66,6 +66,27 @@ The goal of Geaux Park is to simplify the parking experience by making it easier
 
 4. Before opening a pull request, run `flutter analyze` and `flutter test`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and review workflow.
 
+### Run the parking API
+
+The repository includes a dependency-free Dart API for the lot list and lot
+details screens. From the repository root, run:
+
+```bash
+dart run server/bin/server.dart
+```
+
+The server listens on `http://localhost:8080` by default. Set `PORT` or
+`GEAUXPARK_HOST` to change the bind settings. Available endpoints:
+
+```text
+GET /lots
+GET /lots?gameDay=true&permitType=student
+GET /lots/{id}
+```
+
+`/parking-lots/{id}` is also supported for compatibility with the original
+details API contract. The source data is in [`server/data/lots.json`](server/data/lots.json).
+
 ### Run on macOS
 
 ```bash

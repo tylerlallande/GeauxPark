@@ -158,6 +158,12 @@ class _AppShellState extends State<AppShell> {
         child: IndexedStack(index: _selectedIndex, children: screens),
       ),
       bottomNavigationBar: NavigationBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        indicatorColor: Theme.of(context).colorScheme.secondary
+            .withValues(alpha: 0.32),
+        elevation: 8,
+        shadowColor: Theme.of(context).colorScheme.primary
+            .withValues(alpha: 0.14),
         selectedIndex: _selectedIndex,
         destinations: _destinations,
         onDestinationSelected: (index) {

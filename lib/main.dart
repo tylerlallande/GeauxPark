@@ -13,6 +13,10 @@ class GeauxParkApp extends StatelessWidget {
   Widget build(BuildContext context) {
     const brandPurple = Color(0xFF461D7C);
     const brandGold = Color(0xFFFDD023);
+    const actionBlue = Color(0xFF1464A5);
+    const ink = Color(0xFF24152F);
+    const surface = Color(0xFFF8F7FB);
+    const border = Color(0xFFE5DDEC);
 
     return MaterialApp(
       title: 'GeauxPark',
@@ -20,15 +24,18 @@ class GeauxParkApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: brandPurple,
+          brightness: Brightness.light,
           primary: brandPurple,
           secondary: brandGold,
-          surface: const Color(0xFFF8F7FB),
+          tertiary: actionBlue,
+          surface: surface,
+          onSurface: ink,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF8F7FB),
+        scaffoldBackgroundColor: surface,
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF8F7FB),
-          foregroundColor: Color(0xFF24152F),
+          backgroundColor: surface,
+          foregroundColor: ink,
           elevation: 0,
           scrolledUnderElevation: 0,
         ),
@@ -36,8 +43,9 @@ class GeauxParkApp extends StatelessWidget {
           elevation: 0,
           color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+            borderRadius: BorderRadius.all(Radius.circular(18)),
           ),
+          margin: EdgeInsets.zero,
         ),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
@@ -48,11 +56,35 @@ class GeauxParkApp extends StatelessWidget {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
-            borderSide: BorderSide(color: Color(0xFFE7E1EC)),
+            borderSide: BorderSide(color: border),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
-            borderSide: BorderSide(color: brandPurple, width: 2),
+            borderSide: BorderSide(color: actionBlue, width: 2),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: actionBlue,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            textStyle: const TextStyle(fontWeight: FontWeight.w800),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+          ),
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: Colors.white,
+          selectedColor: brandGold.withValues(alpha: 0.3),
+          labelStyle: const TextStyle(color: ink, fontWeight: FontWeight.w700),
+          secondaryLabelStyle: const TextStyle(
+            color: ink,
+            fontWeight: FontWeight.w700,
+          ),
+          side: const BorderSide(color: border),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
         ),
       ),

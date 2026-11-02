@@ -113,22 +113,40 @@ class _DetailsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isAvailable = lot.spacesAvailable > 0;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [colors.primary, const Color(0xFF6C3AA0)],
-            ),
+            color: colors.primary,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.local_parking_rounded, color: colors.secondary),
-              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colors.secondary,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.local_parking_rounded,
+                      color: colors.onSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  _AvailabilityBadge(
+                    label: isAvailable ? 'Available now' : 'Currently full',
+                    isAvailable: isAvailable,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
               Text(
                 lot.name,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -142,6 +160,10 @@ class _DetailsContent extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyLarge
                     ?.copyWith(color: Colors.white.withValues(alpha: 0.82)),
               ),
+              if (details?.availabilityUpdatedAt != null) ...[
+                const SizedBox(height: 10),
+                _FreshnessLabel(updatedAt: details!.availabilityUpdatedAt!),
+              ],
             ],
           ),
         ),
@@ -173,22 +195,41 @@ class _DetailsContent extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        Semantics(
+          label: isAvailable
+              ? '${lot.spacesAvailable} parking spaces available'
+              : 'No parking spaces currently available',
+          child: Text(
+            isAvailable
+                ? 'Availability can change quickly on event days.'
+                : 'Check back soon or explore another nearby lot.',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ),
         const SizedBox(height: 22),
-        _DetailSection(
-          title: 'About this location',
-          icon: Icons.info_outline_rounded,
-          content: details?.description,
+        _DetailsPanel(
+          children: [
+            _DetailSection(
+              title: 'About this location',
+              icon: Icons.info_outline_rounded,
+              content: details?.description,
+            ),
+            _DetailSection(
+              title: 'Hours',
+              icon: Icons.schedule_rounded,
+              content: details?.hours,
+            ),
+            _DetailSection(
+              title: 'Game-day information',
+              icon: Icons.sports_football_rounded,
+              content: details?.eventRestrictions,
+              isLast: true,
+            ),
+          ],
         ),
-        _DetailSection(
-          title: 'Hours',
-          icon: Icons.schedule_rounded,
-          content: details?.hours,
-        ),
-        _DetailSection(
-          title: 'Game-day information',
-          icon: Icons.sports_football_rounded,
-          content: details?.eventRestrictions,
-        ),
+        const SizedBox(height: 16),
         _AmenitiesSection(amenities: details?.amenities ?? const []),
         const SizedBox(height: 8),
         FilledButton.icon(
@@ -256,28 +297,118 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
+class _AvailabilityBadge extends StatelessWidget {
+  const _AvailabilityBadge({required this.label, required this.isAvailable});
+
+  final String label;
+  final bool isAvailable;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: isAvailable
+            ? colors.tertiary.withValues(alpha: 0.22)
+            : Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isAvailable
+              ? colors.tertiary.withValues(alpha: 0.55)
+              : Colors.white.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isAvailable ? Icons.check_circle_rounded : Icons.info_rounded,
+            size: 16,
+            color: isAvailable ? Colors.white : colors.secondary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium
+                ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FreshnessLabel extends StatelessWidget {
+  const _FreshnessLabel({required this.updatedAt});
+
+  final DateTime updatedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.sync_rounded, size: 14, color: Colors.white70),
+        const SizedBox(width: 5),
+        Text(
+          'Updated ${_formatTime(updatedAt)}',
+          style: Theme.of(context).textTheme.labelSmall
+              ?.copyWith(color: Colors.white70),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+}
+
+class _DetailsPanel extends StatelessWidget {
+  const _DetailsPanel({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 2),
+        child: Column(children: children),
+      ),
+    );
+  }
+}
+
 class _DetailSection extends StatelessWidget {
   const _DetailSection({
     required this.title,
     required this.icon,
     required this.content,
+    this.isLast = false,
   });
 
   final String title;
   final IconData icon;
   final String? content;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final value = content?.trim();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 22),
+      padding: EdgeInsets.only(bottom: isLast ? 14 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 20),
+              Icon(icon, size: 20, color: colors.primary),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -291,9 +422,8 @@ class _DetailSection extends StatelessWidget {
             value == null || value.isEmpty
                 ? 'Information not provided yet.'
                 : value,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge
+                ?.copyWith(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -328,8 +458,18 @@ class _AmenitiesSection extends StatelessWidget {
               children: amenities
                   .map(
                     (amenity) => Chip(
-                      avatar: const Icon(Icons.check_rounded, size: 16),
-                      label: Text(amenity),
+                      avatar: Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      label: Text(
+                        amenity,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   )
                   .toList(),
