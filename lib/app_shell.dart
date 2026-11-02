@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'data/sample_game_day.dart';
+import 'data/sample_parking_lots.dart';
 import 'models/parking_lot.dart';
 import 'repositories/demo_parking_repository.dart';
 import 'repositories/parking_repository.dart';
+import 'screens/game_day_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/parking_details_screen.dart';
 import 'screens/parking_map_screen.dart';
@@ -102,6 +105,18 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  void _openGameDay() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => GameDayScreen(
+          plan: sampleGameDayPlan,
+          lots: sampleParkingLots,
+          onLotSelected: _openParkingDetails,
+        ),
+      ),
+    );
+  }
+
   static const _destinations = <NavigationDestination>[
     NavigationDestination(
       icon: Icon(Icons.home_outlined),
@@ -132,6 +147,7 @@ class _AppShellState extends State<AppShell> {
         savedLotIds: _savedLotIds,
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
         onLotSelected: _openParkingDetails,
+        onGameDaySelected: _openGameDay,
       ),
       ParkingMapScreen(
         savedLotIds: _savedLotIds,
@@ -158,12 +174,6 @@ class _AppShellState extends State<AppShell> {
         child: IndexedStack(index: _selectedIndex, children: screens),
       ),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        indicatorColor: Theme.of(context).colorScheme.secondary
-            .withValues(alpha: 0.32),
-        elevation: 8,
-        shadowColor: Theme.of(context).colorScheme.primary
-            .withValues(alpha: 0.14),
         selectedIndex: _selectedIndex,
         destinations: _destinations,
         onDestinationSelected: (index) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
+import '../theme/app_theme.dart';
 import '../widgets/parking_lot_card.dart';
 
 enum ParkingFilter { all, available, free, accessible }
@@ -12,11 +13,13 @@ class HomeScreen extends StatefulWidget {
     required this.savedLotIds,
     required this.onToggleSaved,
     required this.onLotSelected,
+    this.onGameDaySelected,
   });
 
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot>? onToggleSaved;
   final ValueChanged<ParkingLot> onLotSelected;
+  final VoidCallback? onGameDaySelected;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -51,17 +54,19 @@ class _HomeScreenState extends State<HomeScreen> {
       key: const PageStorageKey('home-scroll'),
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.lg,
+            AppSpacing.screen,
+            AppSpacing.sm,
+          ),
           sliver: SliverList.list(
             children: [
               _HomeHeader(colors: colors),
               const SizedBox(height: 28),
               Text(
                 'Find your parking',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
-                ),
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),
               Text(
@@ -73,10 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
               SearchBar(
                 hintText: 'Search lots, garages, or streets',
                 leading: const Icon(Icons.search_rounded),
-                elevation: const WidgetStatePropertyAll(0),
-                side: const WidgetStatePropertyAll(
-                  BorderSide(color: Color(0xFFE7E1EC)),
-                ),
                 onChanged: (value) => setState(() => _query = value),
               ),
               const SizedBox(height: 22),
@@ -90,6 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                // Let chips scroll under the screen margin instead of being
+                // cut off at the padding edge.
+                clipBehavior: Clip.none,
                 child: Row(
                   children: ParkingFilter.values.map((filter) {
                     final label = switch (filter) {
@@ -102,10 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(label),
-                        labelStyle: TextStyle(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
                         selected: _selectedFilter == filter,
                         onSelected: (_) {
                           setState(() => _selectedFilter = filter);
@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const _GameDayBanner(),
+              _GameDayBanner(onTap: widget.onGameDaySelected),
               const SizedBox(height: 20),
               _SectionHeading(
                 title: 'Parking near LSU',
@@ -133,7 +133,12 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              0,
+              AppSpacing.screen,
+              28,
+            ),
             sliver: SliverList.separated(
               itemCount: _visibleLots.length,
               itemBuilder: (context, index) => ParkingLotCard(
@@ -199,19 +204,13 @@ class _HomeHeader extends StatelessWidget {
             children: [
               Text(
                 'GeauxPark',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: colors.primary,
-                ),
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(color: colors.primary),
               ),
               Text(
                 'LSU PARKING COMMAND CENTER',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.7,
-                ),
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: colors.onSurfaceVariant),
               ),
             ],
           ),
@@ -249,11 +248,7 @@ class _SectionHeading extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
+          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
         ),
         if (onAction == null)
           Text(
@@ -269,49 +264,63 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _GameDayBanner extends StatelessWidget {
-  const _GameDayBanner();
+  const _GameDayBanner({this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colors.primary,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colors.secondary,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(Icons.sports_football_rounded, color: colors.primary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Game-day parking',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
+    final text = Theme.of(context).textTheme;
+    return Material(
+      color: colors.primary,
+      borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colors.secondary,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  'Arrive early and check event rates before heading to campus.',
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: Colors.white.withValues(alpha: 0.82)),
+                child: Icon(
+                  Icons.sports_football_rounded,
+                  color: colors.primary,
                 ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Game-day parking',
+                      style: text.titleMedium?.copyWith(
+                        color: colors.onPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Arrive early and check event rates before heading to campus.',
+                      style: text.bodySmall?.copyWith(
+                        color: AppColors.onPurpleMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Icon(Icons.chevron_right_rounded, color: colors.secondary),
               ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
+import '../theme/app_theme.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({
@@ -44,7 +45,12 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screen,
+        AppSpacing.section,
+        AppSpacing.screen,
+        AppSpacing.md,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,18 +58,25 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           const SizedBox(height: 6),
           Text(
             'Explore parking near LSU',
-            style: Theme.of(context).textTheme.bodyMedium
+            style: Theme.of(context).textTheme.bodyLarge
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: 18),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppRadii.panel),
               child: FlutterMap(
                 mapController: _mapController,
-                options: const MapOptions(
-                  initialCenter: LatLng(30.4120, -91.1812),
+                options: MapOptions(
+                  initialCenter: const LatLng(30.4120, -91.1812),
                   initialZoom: 15.2,
+                  // Open with every lot pin fully on screen, clear of the
+                  // location and zoom buttons at the top.
+                  initialCameraFit: CameraFit.coordinates(
+                    coordinates: _lotLocations.values.toList(),
+                    padding: const EdgeInsets.fromLTRB(48, 96, 48, 56),
+                    maxZoom: 16.5,
+                  ),
                   minZoom: 12,
                   maxZoom: 18,
                 ),
@@ -103,9 +116,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                                 : colors.primary,
                                             width: 2,
                                           ),
-                                          boxShadow: const [
+                                          boxShadow: [
                                             BoxShadow(
-                                              color: Color(0x33000000),
+                                              color: colors.shadow.withValues(
+                                                alpha: 0.2,
+                                              ),
                                               blurRadius: 8,
                                               offset: Offset(0, 3),
                                             ),
@@ -141,15 +156,17 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                       height: 34,
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color: Colors.blue,
+                                          color: colors.tertiary,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: Colors.white,
+                                            color: colors.onTertiary,
                                             width: 4,
                                           ),
-                                          boxShadow: const [
+                                          boxShadow: [
                                             BoxShadow(
-                                              color: Color(0x44000000),
+                                              color: colors.shadow.withValues(
+                                                alpha: 0.27,
+                                              ),
                                               blurRadius: 8,
                                             ),
                                           ],
@@ -377,18 +394,18 @@ class _SelectedLotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Material(
-      color: colors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(20),
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(AppRadii.card),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: colors.primaryContainer,
-                foregroundColor: colors.onPrimaryContainer,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
                 child: const Icon(Icons.local_parking_rounded),
               ),
               const SizedBox(width: 12),
