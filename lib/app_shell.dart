@@ -6,6 +6,7 @@ import 'repositories/demo_parking_repository.dart';
 import 'repositories/parking_repository.dart';
 import 'screens/home_screen.dart';
 import 'screens/parking_details_screen.dart';
+import 'screens/parking_map_screen.dart';
 import 'screens/placeholder_screen.dart';
 import 'screens/saved_screen.dart';
 
@@ -132,10 +133,9 @@ class _AppShellState extends State<AppShell> {
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
         onLotSelected: _openParkingDetails,
       ),
-      const PlaceholderScreen(
-        icon: Icons.map_outlined,
-        title: 'Parking map',
-        message: 'Explore parking locations on a map in an upcoming feature.',
+      ParkingMapScreen(
+        savedLotIds: _savedLotIds,
+        onLotSelected: _openParkingDetails,
       ),
       SavedScreen(
         savedLotIds: _savedLotIds,
