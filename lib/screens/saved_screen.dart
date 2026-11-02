@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
 import '../widgets/parking_lot_card.dart';
+import '../theme/app_theme.dart';
 
 class SavedScreen extends StatelessWidget {
   const SavedScreen({
@@ -48,18 +49,24 @@ class SavedScreen extends StatelessWidget {
       key: const PageStorageKey('saved-scroll'),
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.section,
+            AppSpacing.screen,
+            AppSpacing.screen,
+          ),
           sliver: SliverList.list(
             children: [
               Text(
                 'Saved parking',
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),
               Text(
                 '${lots.length} saved ${lots.length == 1 ? 'location' : 'locations'}',
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -98,7 +105,12 @@ class SavedScreen extends StatelessWidget {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              0,
+              AppSpacing.screen,
+              28,
+            ),
             sliver: SliverList.separated(
               itemCount: lots.length,
               separatorBuilder: (_, _) => const SizedBox(height: 12),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/parking_lot.dart';
+import '../theme/app_theme.dart';
 
 class ParkingLotCard extends StatelessWidget {
   const ParkingLotCard({
@@ -67,8 +68,7 @@ class ParkingLotCard extends StatelessWidget {
                       lot.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Container(
@@ -80,7 +80,7 @@ class ParkingLotCard extends StatelessWidget {
                         color: lot.spacesAvailable > 0
                             ? colors.tertiary.withValues(alpha: 0.1)
                             : colors.errorContainer,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppRadii.tag),
                       ),
                       child: Text(
                         lot.spacesAvailable > 0 ? 'OPEN NOW' : 'FULL',
@@ -88,8 +88,6 @@ class ParkingLotCard extends StatelessWidget {
                           color: lot.spacesAvailable > 0
                               ? colors.tertiary
                               : colors.onErrorContainer,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
                         ),
                       ),
                     ),
@@ -160,7 +158,7 @@ class _LotFact extends StatelessWidget {
         Text(
           text,
           style: Theme.of(context).textTheme.labelMedium
-              ?.copyWith(color: resolvedColor, fontWeight: FontWeight.w600),
+              ?.copyWith(color: resolvedColor),
         ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/parking_details.dart';
 import '../models/parking_lot.dart';
 import '../repositories/parking_repository.dart';
+import '../theme/app_theme.dart';
 
 typedef ParkingSaveCallback = Future<bool> Function(ParkingLot lot);
 
@@ -121,7 +122,7 @@ class _DetailsContent extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
           decoration: BoxDecoration(
             color: colors.primary,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppRadii.panel),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,16 +150,14 @@ class _DetailsContent extends StatelessWidget {
               const SizedBox(height: 22),
               Text(
                 lot.name,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(color: colors.onPrimary),
               ),
               const SizedBox(height: 6),
               Text(
                 lot.address,
                 style: Theme.of(context).textTheme.bodyLarge
-                    ?.copyWith(color: Colors.white.withValues(alpha: 0.82)),
+                    ?.copyWith(color: AppColors.onPurpleMuted),
               ),
               if (details?.availabilityUpdatedAt != null) ...[
                 const SizedBox(height: 10),
@@ -285,8 +284,7 @@ class _SummaryCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 2),
             Text(label, style: Theme.of(context).textTheme.bodySmall),
@@ -311,12 +309,12 @@ class _AvailabilityBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: isAvailable
             ? colors.tertiary.withValues(alpha: 0.22)
-            : Colors.white.withValues(alpha: 0.14),
+            : colors.onPrimary.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isAvailable
               ? colors.tertiary.withValues(alpha: 0.55)
-              : Colors.white.withValues(alpha: 0.3),
+              : colors.onPrimary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -325,13 +323,13 @@ class _AvailabilityBadge extends StatelessWidget {
           Icon(
             isAvailable ? Icons.check_circle_rounded : Icons.info_rounded,
             size: 16,
-            color: isAvailable ? Colors.white : colors.secondary,
+            color: isAvailable ? colors.onPrimary : colors.secondary,
           ),
           const SizedBox(width: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium
-                ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                ?.copyWith(color: colors.onPrimary),
           ),
         ],
       ),
@@ -349,12 +347,16 @@ class _FreshnessLabel extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.sync_rounded, size: 14, color: Colors.white70),
+        const Icon(
+          Icons.sync_rounded,
+          size: 14,
+          color: AppColors.onPurpleSubtle,
+        ),
         const SizedBox(width: 5),
         Text(
           'Updated ${_formatTime(updatedAt)}',
           style: Theme.of(context).textTheme.labelSmall
-              ?.copyWith(color: Colors.white70),
+              ?.copyWith(color: AppColors.onPurpleSubtle),
         ),
       ],
     );
@@ -410,11 +412,7 @@ class _DetailSection extends StatelessWidget {
             children: [
               Icon(icon, size: 20, color: colors.primary),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
-              ),
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
             ],
           ),
           const SizedBox(height: 8),
@@ -443,11 +441,7 @@ class _AmenitiesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Amenities',
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
+          Text('Amenities', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 10),
           if (amenities.isEmpty)
             const Text('Information not provided yet.')
@@ -463,13 +457,7 @@ class _AmenitiesSection extends StatelessWidget {
                         size: 16,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      label: Text(
-                        amenity,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      label: Text(amenity),
                     ),
                   )
                   .toList(),

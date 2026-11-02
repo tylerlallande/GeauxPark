@@ -120,6 +120,41 @@ void main() {
     expect(find.text('Covered parking'), findsOneWidget);
   });
 
+  testWidgets('game-day banner opens the game-day plan', (tester) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Game-day parking'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Game day'), findsOneWidget);
+    expect(find.text('Saturday home game'), findsOneWidget);
+    expect(find.text('Parking status'), findsOneWidget);
+    expect(find.text('FILLING FAST'), findsOneWidget);
+    expect(find.text('PERMIT ONLY'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Before you go'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Game-day timeline'), findsOneWidget);
+    expect(find.text('Before you go'), findsOneWidget);
+  });
+
+  testWidgets('game-day lot opens parking details', (tester) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Game-day parking'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('West Stadium Lot'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Parking details'), findsOneWidget);
+    expect(find.text('West Stadium Lot'), findsOneWidget);
+  });
+
   testWidgets('details skeleton handles unavailable server data', (
     tester,
   ) async {
