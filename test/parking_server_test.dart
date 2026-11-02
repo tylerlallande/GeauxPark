@@ -1,3 +1,6 @@
+// The server contract is tested from its standalone server directory.
+// ignore_for_file: avoid_relative_lib_imports
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';

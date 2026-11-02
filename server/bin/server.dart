@@ -1,3 +1,6 @@
+// The standalone Dart server lives outside Flutter's lib package.
+// ignore_for_file: avoid_relative_lib_imports
+
 import 'dart:io';
 
 import '../lib/parking_server.dart';
