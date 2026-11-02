@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../data/sample_parking_lots.dart';
@@ -21,6 +25,10 @@ class ParkingMapScreen extends StatefulWidget {
 
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final MapController _mapController = MapController();
+  StreamSubscription<Position>? _positionSubscription;
+  LatLng? _userLocation;
+  bool _isLocating = false;
+  bool _isTrackingLocation = false;
 
   // Approximate campus positions for the demo lots, centered around LSU.
   static const _lotLocations = <String, LatLng>{
@@ -66,61 +74,90 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     userAgentPackageName: 'com.geauxpark.app',
                   ),
                   MarkerLayer(
-                    markers: sampleParkingLots
-                        .map((lot) {
-                          final location = _lotLocations[lot.id];
-                          if (location == null) return null;
-                          final isSelected = lot.id == _selectedLot.id;
-                          return Marker(
-                            point: location,
-                            width: 54,
-                            height: 62,
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedLot = lot),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 46,
-                                    height: 46,
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? colors.primary
-                                          : colors.surface,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? colors.surface
-                                            : colors.primary,
-                                        width: 2,
-                                      ),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: Color(0x33000000),
-                                          blurRadius: 8,
-                                          offset: Offset(0, 3),
+                    markers:
+                        sampleParkingLots
+                            .map((lot) {
+                              final location = _lotLocations[lot.id];
+                              if (location == null) return null;
+                              final isSelected = lot.id == _selectedLot.id;
+                              return Marker(
+                                point: location,
+                                width: 54,
+                                height: 62,
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _selectedLot = lot),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: 46,
+                                        height: 46,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? colors.primary
+                                              : colors.surface,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? colors.surface
+                                                : colors.primary,
+                                            width: 2,
+                                          ),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Color(0x33000000),
+                                              blurRadius: 8,
+                                              offset: Offset(0, 3),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.local_parking_rounded,
-                                      color: isSelected
-                                          ? colors.onPrimary
-                                          : colors.primary,
-                                      size: 25,
-                                    ),
+                                        child: Icon(
+                                          Icons.local_parking_rounded,
+                                          color: isSelected
+                                              ? colors.onPrimary
+                                              : colors.primary,
+                                          size: 25,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        color: colors.primary,
+                                        size: 16,
+                                      ),
+                                    ],
                                   ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: colors.primary,
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        })
-                        .whereType<Marker>()
-                        .toList(),
+                                ),
+                              );
+                            })
+                            .whereType<Marker>()
+                            .toList()
+                          ..addAll(
+                            _userLocation == null
+                                ? const []
+                                : [
+                                    Marker(
+                                      point: _userLocation!,
+                                      width: 34,
+                                      height: 34,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 4,
+                                          ),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Color(0x44000000),
+                                              blurRadius: 8,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                          ),
                   ),
                   RichAttributionWidget(
                     attributions: [
@@ -133,6 +170,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     child: _MapZoomControls(
                       onZoomIn: () => _changeZoom(1),
                       onZoomOut: () => _changeZoom(-1),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: _MyLocationButton(
+                      isLoading: _isLocating,
+                      isTracking: _isTrackingLocation,
+                      onPressed: _isLocating ? null : _toggleLocationTracking,
                     ),
                   ),
                 ],
@@ -154,6 +200,131 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final camera = _mapController.camera;
     final zoom = (camera.zoom + amount).clamp(12.0, 18.0);
     _mapController.move(camera.center, zoom);
+  }
+
+  Future<void> _toggleLocationTracking() async {
+    if (_isTrackingLocation) {
+      await _positionSubscription?.cancel();
+      _positionSubscription = null;
+      if (mounted) setState(() => _isTrackingLocation = false);
+      return;
+    }
+
+    setState(() => _isLocating = true);
+    try {
+      if (!kIsWeb) {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          throw const _LocationIssue(
+            'Turn on location services and try again.',
+          );
+        }
+
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission == LocationPermission.denied) {
+          throw const _LocationIssue('Location permission was denied.');
+        }
+        if (permission == LocationPermission.deniedForever) {
+          throw const _LocationIssue(
+            'Allow location access for GeauxPark in your device settings.',
+          );
+        }
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      _updateUserLocation(position);
+      _positionSubscription =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 10,
+            ),
+          ).listen(
+            _updateUserLocation,
+            onError: (Object error) {
+              if (!mounted) return;
+              setState(() => _isTrackingLocation = false);
+              _showLocationMessage('Live location stopped: $error');
+            },
+            cancelOnError: true,
+          );
+      if (mounted) setState(() => _isTrackingLocation = true);
+    } on _LocationIssue catch (error) {
+      _showLocationMessage(error.message);
+    } catch (_) {
+      _showLocationMessage(
+        'Could not get your location. Check your location permission and try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
+
+  void _updateUserLocation(Position position) {
+    if (!mounted) return;
+    final location = LatLng(position.latitude, position.longitude);
+    setState(() => _userLocation = location);
+    _mapController.move(location, _mapController.camera.zoom);
+  }
+
+  void _showLocationMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    super.dispose();
+  }
+}
+
+class _LocationIssue implements Exception {
+  const _LocationIssue(this.message);
+
+  final String message;
+}
+
+class _MyLocationButton extends StatelessWidget {
+  const _MyLocationButton({
+    required this.isLoading,
+    required this.isTracking,
+    required this.onPressed,
+  });
+
+  final bool isLoading;
+  final bool isTracking;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: isTracking ? colors.primary : colors.surface,
+      elevation: 3,
+      borderRadius: BorderRadius.circular(14),
+      child: IconButton(
+        tooltip: isTracking ? 'Stop live location' : 'Use my live location',
+        onPressed: onPressed,
+        color: isTracking ? colors.onPrimary : colors.primary,
+        icon: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(isTracking ? Icons.location_searching : Icons.my_location),
+      ),
+    );
   }
 }
 
