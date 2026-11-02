@@ -16,6 +16,7 @@ class GeauxParkApp extends StatelessWidget {
     const actionBlue = Color(0xFF1464A5);
     const ink = Color(0xFF24152F);
     const surface = Color(0xFFF8F7FB);
+    const border = Color(0xFFE5DDEC);
 
     return MaterialApp(
       title: 'GeauxPark',
@@ -42,8 +43,9 @@ class GeauxParkApp extends StatelessWidget {
           elevation: 0,
           color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+            borderRadius: BorderRadius.all(Radius.circular(18)),
           ),
+          margin: EdgeInsets.zero,
         ),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
@@ -54,7 +56,7 @@ class GeauxParkApp extends StatelessWidget {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
-            borderSide: BorderSide(color: Color(0xFFE7E1EC)),
+            borderSide: BorderSide(color: border),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
@@ -66,6 +68,7 @@ class GeauxParkApp extends StatelessWidget {
             backgroundColor: actionBlue,
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(52),
+            textStyle: const TextStyle(fontWeight: FontWeight.w800),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
@@ -74,7 +77,12 @@ class GeauxParkApp extends StatelessWidget {
         chipTheme: ChipThemeData(
           backgroundColor: Colors.white,
           selectedColor: brandGold.withValues(alpha: 0.3),
-          side: const BorderSide(color: Color(0xFFE7E1EC)),
+          labelStyle: const TextStyle(color: ink, fontWeight: FontWeight.w700),
+          secondaryLabelStyle: const TextStyle(
+            color: ink,
+            fontWeight: FontWeight.w700,
+          ),
+          side: const BorderSide(color: border),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),

@@ -458,8 +458,18 @@ class _AmenitiesSection extends StatelessWidget {
               children: amenities
                   .map(
                     (amenity) => Chip(
-                      avatar: const Icon(Icons.check_rounded, size: 16),
-                      label: Text(amenity),
+                      avatar: Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      label: Text(
+                        amenity,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   )
                   .toList(),

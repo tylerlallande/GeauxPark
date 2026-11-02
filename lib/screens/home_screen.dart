@@ -51,19 +51,21 @@ class _HomeScreenState extends State<HomeScreen> {
       key: const PageStorageKey('home-scroll'),
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           sliver: SliverList.list(
             children: [
               _HomeHeader(colors: colors),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               Text(
                 'Find your parking',
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Search near campus before you leave.',
+                'Make your next move with confidence.',
                 style: Theme.of(context).textTheme.bodyLarge
                     ?.copyWith(color: colors.onSurfaceVariant),
               ),
@@ -100,6 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(label),
+                        labelStyle: TextStyle(
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
                         selected: _selectedFilter == filter,
                         onSelected: (_) {
                           setState(() => _selectedFilter = filter);
@@ -109,9 +115,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               const _GameDayBanner(),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               _SectionHeading(
                 title: 'Parking near LSU',
                 actionLabel: '${_visibleLots.length} results',
@@ -155,14 +161,36 @@ class _HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Icon(Icons.local_parking_rounded, color: colors.onPrimary),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(
+                Icons.local_parking_rounded,
+                color: colors.onPrimary,
+                size: 28,
+              ),
+            ),
+            Positioned(
+              right: -3,
+              top: -3,
+              child: Container(
+                width: 13,
+                height: 13,
+                decoration: BoxDecoration(
+                  color: colors.secondary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.surface, width: 2),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -177,17 +205,28 @@ class _HomeHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                'Baton Rouge, Louisiana',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: colors.onSurfaceVariant),
+                'LSU PARKING COMMAND CENTER',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.7,
+                ),
               ),
             ],
           ),
         ),
-        IconButton.filledTonal(
-          tooltip: 'Notifications',
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none_rounded),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: colors.secondary.withValues(alpha: 0.24),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            Icons.sports_football_rounded,
+            color: colors.primary,
+            size: 22,
+          ),
         ),
       ],
     );
