@@ -238,9 +238,7 @@ class _GameDayBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colors.primary, const Color(0xFF6C3AA0)],
-        ),
+        color: colors.primary,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(

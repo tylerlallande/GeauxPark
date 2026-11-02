@@ -77,7 +77,7 @@ class ParkingLotCard extends StatelessWidget {
                         _LotFact(
                           icon: Icons.directions_car_filled_outlined,
                           text: '${lot.spacesAvailable} spots',
-                          color: const Color(0xFF277A4A),
+                          color: colors.tertiary,
                         ),
                       ],
                     ),
