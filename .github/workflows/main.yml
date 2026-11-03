@@ -1,48 +1,59 @@
-name: 🛠 Android CI / Build & Release APK
+name: Android CI / Build APK
 
 on:
   push:
-    branches: [ main, master, upgrade ]
-    tags:    [ 'v*.*.*' ]
+    branches: [main, master, upgrade]
+    tags: ['v*.*.*']
   pull_request:
-    branches: [ main, master, upgrade ]
+    branches: [main, master, upgrade]
+  workflow_dispatch:
 
 permissions:
-  contents: write   # allow creating/updating Releases & uploading assets
-  actions:  read    # allow pulling marketplace actions
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build_and_release:
+  build:
+    name: Analyze, test, and build APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: 📂 Checkout code
+      - name: Check out source
         uses: actions/checkout@v6
 
-      - name: 🚀 Cache pub deps
-        uses: actions/cache@v5
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: ${{ runner.os }}-pub-
-
-      - name: ☕️ Setup Java (Temurin 17)
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: 🦋 Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.8'
           channel: stable
+          cache: true
 
-      - name: 📥 Get dependencies
-        run: flutter pub get
+      - name: Install locked dependencies
+        run: flutter pub get --enforce-lockfile
 
-      - name: ✅ Run tests
+      - name: Analyze source
+        run: flutter analyze
+
+      - name: Run tests with coverage
         run: flutter test --coverage
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: geauxpark-apk-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
