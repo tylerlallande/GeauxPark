@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/parking_lot_tags.dart';
+
 import '../models/parking_details.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
@@ -223,6 +225,8 @@ class _DetailsContent extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         _PermitAccessCard(lot: lot, selectedPermits: selectedPermits),
+        const SizedBox(height: 12),
+        ParkingLotTags(lot: lot),
         const SizedBox(height: 16),
         _DetailsPanel(
           children: [

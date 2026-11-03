@@ -31,8 +31,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  ParkingFilter _selectedFilter = ParkingFilter.all;
+  final Set<ParkingFilter> _selectedFilters = {};
+  final Set<ParkingTag> _selectedTags = {};
+  final TextEditingController _searchController = TextEditingController();
   String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   List<ParkingLot> get _visibleLots {
     return sampleParkingLots.where((lot) {
@@ -40,17 +48,24 @@ class _HomeScreenState extends State<HomeScreen> {
       final matchesSearch =
           normalizedQuery.isEmpty ||
           lot.name.toLowerCase().contains(normalizedQuery) ||
-          lot.address.toLowerCase().contains(normalizedQuery);
-      final matchesFilter = switch (_selectedFilter) {
-        ParkingFilter.all => true,
-        ParkingFilter.myPermits =>
-          lot.eligibilityFor(widget.selectedPermits) !=
-              PermitEligibility.ineligible,
-        ParkingFilter.available => lot.isAvailable,
-        ParkingFilter.free => lot.priceLabel.toLowerCase().contains('free'),
-        ParkingFilter.accessible => lot.isAccessible == true,
-      };
-      return matchesSearch && matchesFilter;
+          lot.address.toLowerCase().contains(normalizedQuery) ||
+          lot.tags.any(
+            (tag) => tag.label.toLowerCase().contains(normalizedQuery),
+          );
+      final matchesFilters = _selectedFilters.every(
+        (filter) => switch (filter) {
+          ParkingFilter.all => true,
+          ParkingFilter.myPermits =>
+            lot.eligibilityFor(widget.selectedPermits) !=
+                PermitEligibility.ineligible,
+          ParkingFilter.available => lot.isAvailable,
+          ParkingFilter.free => lot.priceLabel.toLowerCase().contains('free'),
+          ParkingFilter.accessible => lot.isAccessible == true,
+        },
+      );
+      final matchesTags =
+          _selectedTags.isEmpty || lot.tags.any(_selectedTags.contains);
+      return matchesSearch && matchesFilters && matchesTags;
     }).toList();
   }
 
@@ -84,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
               SearchBar(
+                controller: _searchController,
                 hintText: 'Search lots, garages, or streets',
                 leading: const Icon(Icons.search_rounded),
                 onChanged: (value) => setState(() => _query = value),
@@ -93,7 +109,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: 'Quick filters',
                 actionLabel: 'Clear',
                 onAction: () {
-                  setState(() => _selectedFilter = ParkingFilter.all);
+                  _searchController.clear();
+                  setState(() {
+                    _selectedFilters.clear();
+                    _selectedTags.clear();
+                    _query = '';
+                  });
                 },
               ),
               const SizedBox(height: 10),
@@ -114,19 +135,59 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
+                        key: ValueKey('quick-filter-${filter.name}'),
                         label: Text(label),
-                        selected: _selectedFilter == filter,
+                        selected: filter == ParkingFilter.all
+                            ? _selectedFilters.isEmpty && _selectedTags.isEmpty
+                            : _selectedFilters.contains(filter),
                         onSelected:
                             filter == ParkingFilter.myPermits &&
                                 widget.selectedPermits.isEmpty
                             ? null
-                            : (_) {
-                                setState(() => _selectedFilter = filter);
+                            : (selected) {
+                                setState(() {
+                                  if (filter == ParkingFilter.all) {
+                                    _selectedFilters.clear();
+                                    _selectedTags.clear();
+                                  } else if (selected) {
+                                    _selectedFilters.add(filter);
+                                  } else {
+                                    _selectedFilters.remove(filter);
+                                  }
+                                });
                               },
                       ),
                     );
                   }).toList(),
                 ),
+              ),
+              const SizedBox(height: 18),
+              Text('Lot types', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'Choose any type. Quick filters narrow your results further.',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final tag in ParkingTag.values)
+                    FilterChip(
+                      key: ValueKey('lot-type-${tag.name}'),
+                      label: Text(tag.label),
+                      selected: _selectedTags.contains(tag),
+                      onSelected: (selected) => setState(() {
+                        if (selected) {
+                          _selectedTags.add(tag);
+                        } else {
+                          _selectedTags.remove(tag);
+                        }
+                      }),
+                    ),
+                ],
               ),
               const SizedBox(height: 18),
               if (widget.selectedPermits.isEmpty) ...[

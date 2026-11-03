@@ -11,6 +11,7 @@ import '../data/parking_locations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../theme/app_theme.dart';
+import '../widgets/parking_lot_tags.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({
@@ -466,6 +467,8 @@ class _SelectedLotCard extends StatelessWidget {
                       lot.name,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
+                    const SizedBox(height: 6),
+                    ParkingLotTags(lot: lot),
                     const SizedBox(height: 3),
                     Text(
                       '${lot.spacesLabel} · ${lot.priceLabel}',

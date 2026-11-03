@@ -5,6 +5,7 @@ import 'campus_parking_locations.dart';
 final sampleParkingLots = <ParkingLot>[
   ParkingLot(
     id: 'union-square-garage',
+    extraTags: {ParkingTag.garage},
     name: 'Union Square Garage',
     address: '310 LSU Student Union',
     distanceMiles: 0.2,
@@ -29,6 +30,7 @@ final sampleParkingLots = <ParkingLot>[
   ),
   ParkingLot(
     id: 'nicholson-gateway',
+    extraTags: {ParkingTag.garage},
     name: 'Nicholson Gateway',
     address: 'Nicholson Drive at Skip Bertman Drive',
     distanceMiles: 0.8,

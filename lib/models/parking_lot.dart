@@ -2,6 +2,20 @@ import 'parking_permit.dart';
 
 enum PermitEligibility { notConfigured, eligible, ineligible }
 
+enum ParkingTag {
+  visitor('Visitor'),
+  commuter('Commuter'),
+  residential('Residential'),
+  greek('Greek housing'),
+  law('Law'),
+  parkAndGeaux('Park & Geaux'),
+  garage('Garage'),
+  event('Event');
+
+  const ParkingTag(this.label);
+  final String label;
+}
+
 class ParkingLot {
   const ParkingLot({
     required this.id,
@@ -13,6 +27,7 @@ class ParkingLot {
     required this.isAccessible,
     required this.permitTypes,
     this.distanceReference,
+    this.extraTags = const {},
   });
 
   final String id;
@@ -24,6 +39,27 @@ class ParkingLot {
   final bool? isAccessible;
   final Set<ParkingPermit> permitTypes;
   final String? distanceReference;
+  final Set<ParkingTag> extraTags;
+
+  Set<ParkingTag> get tags => {
+    ...extraTags,
+    if (permitTypes.contains(ParkingPermit.visitor)) ParkingTag.visitor,
+    if (permitTypes.contains(ParkingPermit.commuter)) ParkingTag.commuter,
+    if (permitTypes.any(
+      {
+        ParkingPermit.westCampusResident,
+        ParkingPermit.eastCampusResident,
+        ParkingPermit.nicholsonGatewayResident,
+        ParkingPermit.greekResident,
+      }.contains,
+    ))
+      ParkingTag.residential,
+    if (permitTypes.contains(ParkingPermit.greekResident)) ParkingTag.greek,
+    if (permitTypes.contains(ParkingPermit.lawSchool)) ParkingTag.law,
+    if (permitTypes.contains(ParkingPermit.parkAndGeaux))
+      ParkingTag.parkAndGeaux,
+    if (permitTypes.contains(ParkingPermit.event)) ParkingTag.event,
+  };
 
   bool get isAvailable => (spacesAvailable ?? 0) > 0;
   String get spacesLabel => spacesAvailable == null

@@ -59,6 +59,11 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(
+      tester.element(find.byTooltip('Save Union Square Garage')),
+      alignment: 0.3,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Save Union Square Garage'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Unsave Union Square Garage'), findsOneWidget);
@@ -87,22 +92,36 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const GeauxParkApp());
+    final homeScroll = find
+        .byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.axisDirection == AxisDirection.down,
+        )
+        .first;
 
     expect(find.text('GeauxPark'), findsOneWidget);
     expect(find.text('Find your parking'), findsOneWidget);
     expect(find.text('Quick filters'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Game-day parking'),
+      200,
+      scrollable: homeScroll,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Game-day parking'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Parking near LSU'),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: homeScroll,
     );
+    await tester.pumpAndSettle();
     expect(find.text('Parking near LSU'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Union Square Garage'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: homeScroll,
     );
     expect(find.text('Union Square Garage'), findsOneWidget);
   });
@@ -210,6 +229,11 @@ void main() {
     await tester.pumpWidget(const GeauxParkApp());
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Game-day parking'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Game-day parking'));
     await tester.pumpAndSettle();
 
@@ -231,6 +255,11 @@ void main() {
   testWidgets('game-day lot opens parking details', (tester) async {
     await tester.pumpWidget(const GeauxParkApp());
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Game-day parking'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Game-day parking'));
     await tester.pumpAndSettle();
 

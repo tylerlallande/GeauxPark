@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/parking_lot.dart';
 import '../theme/app_theme.dart';
+import 'parking_lot_tags.dart';
 
 class ParkingLotCard extends StatelessWidget {
   const ParkingLotCard({
@@ -107,6 +108,8 @@ class ParkingLotCard extends StatelessWidget {
                       _PermitStatus(eligibility: permitEligibility),
                     ],
                     const SizedBox(height: 8),
+                    ParkingLotTags(lot: lot),
+                    const SizedBox(height: 8),
                     Text(
                       lot.address,
                       maxLines: 1,
@@ -199,10 +202,12 @@ class _LotFact extends StatelessWidget {
       children: [
         Icon(icon, size: 15, color: resolvedColor),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.labelMedium
-              ?.copyWith(color: resolvedColor),
+        Flexible(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.labelMedium
+                ?.copyWith(color: resolvedColor),
+          ),
         ),
       ],
     );
