@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/parking_details.dart';
 import '../models/parking_lot.dart';
+import '../models/parking_permit.dart';
 import '../repositories/parking_repository.dart';
 import '../theme/app_theme.dart';
 
@@ -15,6 +16,7 @@ class ParkingDetailsScreen extends StatefulWidget {
     required this.initiallySaved,
     this.onToggleSaved,
     this.onDirectionsRequested,
+    this.selectedPermits = const {},
   });
 
   final ParkingLot lot;
@@ -22,6 +24,7 @@ class ParkingDetailsScreen extends StatefulWidget {
   final bool initiallySaved;
   final ParkingSaveCallback? onToggleSaved;
   final ValueChanged<ParkingDetails>? onDirectionsRequested;
+  final Set<ParkingPermit> selectedPermits;
 
   @override
   State<ParkingDetailsScreen> createState() => _ParkingDetailsScreenState();
@@ -93,6 +96,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
             lot: widget.lot,
             details: snapshot.data,
             onDirectionsRequested: widget.onDirectionsRequested,
+            selectedPermits: widget.selectedPermits,
           );
         },
       ),
@@ -105,11 +109,13 @@ class _DetailsContent extends StatelessWidget {
     required this.lot,
     required this.details,
     required this.onDirectionsRequested,
+    required this.selectedPermits,
   });
 
   final ParkingLot lot;
   final ParkingDetails? details;
   final ValueChanged<ParkingDetails>? onDirectionsRequested;
+  final Set<ParkingPermit> selectedPermits;
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +214,8 @@ class _DetailsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
+        _PermitAccessCard(lot: lot, selectedPermits: selectedPermits),
+        const SizedBox(height: 16),
         _DetailsPanel(
           children: [
             _DetailSection(
@@ -255,6 +263,69 @@ class _DetailsContent extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _PermitAccessCard extends StatelessWidget {
+  const _PermitAccessCard({required this.lot, required this.selectedPermits});
+
+  final ParkingLot lot;
+  final Set<ParkingPermit> selectedPermits;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final eligibility = lot.eligibilityFor(selectedPermits);
+    final isEligible = eligibility == PermitEligibility.eligible;
+    final isConfigured = eligibility != PermitEligibility.notConfigured;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: !isConfigured
+            ? colors.surfaceContainerHighest
+            : isEligible
+            ? colors.tertiary.withValues(alpha: 0.1)
+            : colors.errorContainer,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                !isConfigured
+                    ? Icons.badge_outlined
+                    : isEligible
+                    ? Icons.verified_outlined
+                    : Icons.block_rounded,
+                color: !isConfigured
+                    ? colors.onSurfaceVariant
+                    : isEligible
+                    ? colors.tertiary
+                    : colors.onErrorContainer,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  !isConfigured
+                      ? 'Add a permit to check access'
+                      : isEligible
+                      ? 'Works with your permit'
+                      : 'Your permit is not accepted here',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Accepted: ${lot.permitTypes.map((permit) => permit.label).join(', ')}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }

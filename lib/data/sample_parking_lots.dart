@@ -1,4 +1,5 @@
 import '../models/parking_lot.dart';
+import '../models/parking_permit.dart';
 
 const sampleParkingLots = <ParkingLot>[
   ParkingLot(
@@ -9,6 +10,11 @@ const sampleParkingLots = <ParkingLot>[
     priceLabel: r'$8 event rate',
     spacesAvailable: 42,
     isAccessible: true,
+    permitTypes: {
+      ParkingPermit.unionSquareGarage,
+      ParkingPermit.employeeGarageC,
+      ParkingPermit.visitor,
+    },
   ),
   ParkingLot(
     id: 'west-stadium-lot',
@@ -18,6 +24,7 @@ const sampleParkingLots = <ParkingLot>[
     priceLabel: r'$12 event rate',
     spacesAvailable: 18,
     isAccessible: true,
+    permitTypes: {ParkingPermit.visitor, ParkingPermit.event},
   ),
   ParkingLot(
     id: 'nicholson-gateway',
@@ -27,5 +34,6 @@ const sampleParkingLots = <ParkingLot>[
     priceLabel: 'Free after 5 PM',
     spacesAvailable: 67,
     isAccessible: false,
+    permitTypes: {ParkingPermit.nicholsonGatewayResident},
   ),
 ];

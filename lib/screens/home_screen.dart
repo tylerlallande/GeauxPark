@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
+import '../models/parking_permit.dart';
 import '../theme/app_theme.dart';
 import '../widgets/parking_lot_card.dart';
 
-enum ParkingFilter { all, available, free, accessible }
+enum ParkingFilter { all, myPermits, available, free, accessible }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -13,13 +14,17 @@ class HomeScreen extends StatefulWidget {
     required this.savedLotIds,
     required this.onToggleSaved,
     required this.onLotSelected,
+    required this.selectedPermits,
     this.onGameDaySelected,
+    this.onManagePermits,
   });
 
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot>? onToggleSaved;
   final ValueChanged<ParkingLot> onLotSelected;
+  final Set<ParkingPermit> selectedPermits;
   final VoidCallback? onGameDaySelected;
+  final VoidCallback? onManagePermits;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -38,6 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
           lot.address.toLowerCase().contains(normalizedQuery);
       final matchesFilter = switch (_selectedFilter) {
         ParkingFilter.all => true,
+        ParkingFilter.myPermits =>
+          lot.eligibilityFor(widget.selectedPermits) !=
+              PermitEligibility.ineligible,
         ParkingFilter.available => lot.spacesAvailable > 0,
         ParkingFilter.free => lot.priceLabel.toLowerCase().contains('free'),
         ParkingFilter.accessible => lot.isAccessible,
@@ -98,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: ParkingFilter.values.map((filter) {
                     final label = switch (filter) {
                       ParkingFilter.all => 'All parking',
+                      ParkingFilter.myPermits => 'My permits',
                       ParkingFilter.available => 'Available now',
                       ParkingFilter.free => 'Free',
                       ParkingFilter.accessible => 'Accessible',
@@ -107,15 +116,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: FilterChip(
                         label: Text(label),
                         selected: _selectedFilter == filter,
-                        onSelected: (_) {
-                          setState(() => _selectedFilter = filter);
-                        },
+                        onSelected:
+                            filter == ParkingFilter.myPermits &&
+                                widget.selectedPermits.isEmpty
+                            ? null
+                            : (_) {
+                                setState(() => _selectedFilter = filter);
+                              },
                       ),
                     );
                   }).toList(),
                 ),
               ),
               const SizedBox(height: 18),
+              if (widget.selectedPermits.isEmpty) ...[
+                _PermitSetupBanner(onTap: widget.onManagePermits),
+                const SizedBox(height: 14),
+              ],
               _GameDayBanner(onTap: widget.onGameDaySelected),
               const SizedBox(height: 20),
               _SectionHeading(
@@ -148,11 +165,48 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? null
                     : () => widget.onToggleSaved!(_visibleLots[index]),
                 onTap: () => widget.onLotSelected(_visibleLots[index]),
+                permitEligibility: _visibleLots[index].eligibilityFor(
+                  widget.selectedPermits,
+                ),
               ),
               separatorBuilder: (_, _) => const SizedBox(height: 12),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _PermitSetupBanner extends StatelessWidget {
+  const _PermitSetupBanner({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.secondary.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(Icons.badge_outlined, color: colors.primary),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Add your parking permits to see which lots you can use.',
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.primary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

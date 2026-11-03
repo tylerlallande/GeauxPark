@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/main.dart';
 import 'package:geauxpark/models/parking_details.dart';
 import 'package:geauxpark/models/parking_lot.dart';
+import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/repositories/parking_repository.dart';
 import 'package:geauxpark/screens/parking_details_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,6 +54,11 @@ void main() {
     expect(find.text('Find your parking'), findsOneWidget);
     expect(find.text('Quick filters'), findsOneWidget);
     expect(find.text('Game-day parking'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Parking near LSU'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Parking near LSU'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -77,6 +83,48 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Parking map'), findsOneWidget);
+  });
+
+  testWidgets('permit selection persists and filters eligible lots', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your parking'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('permit-nicholson-gateway-resident')),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('permit-nicholson-gateway-resident')),
+    );
+    await tester.pumpAndSettle();
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getStringList('selected_parking_permit_ids'),
+      contains('nicholson-gateway-resident'),
+    );
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('My permits'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Nicholson Gateway'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Nicholson Gateway'), findsOneWidget);
+    expect(find.text('Union Square Garage'), findsNothing);
   });
 
   testWidgets('parking search filters the visible results', (
@@ -209,6 +257,7 @@ const _testLot = ParkingLot(
   priceLabel: 'Price unavailable',
   spacesAvailable: 0,
   isAccessible: false,
+  permitTypes: {ParkingPermit.visitor},
 );
 
 class _FakeParkingRepository implements ParkingRepository {
