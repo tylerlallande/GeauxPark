@@ -12,6 +12,7 @@ class ParkingLot {
     required this.spacesAvailable,
     required this.isAccessible,
     required this.permitTypes,
+    this.distanceReference,
   });
 
   final String id;
@@ -19,9 +20,18 @@ class ParkingLot {
   final String address;
   final double distanceMiles;
   final String priceLabel;
-  final int spacesAvailable;
-  final bool isAccessible;
+  final int? spacesAvailable;
+  final bool? isAccessible;
   final Set<ParkingPermit> permitTypes;
+  final String? distanceReference;
+
+  bool get isAvailable => (spacesAvailable ?? 0) > 0;
+  String get spacesLabel => spacesAvailable == null
+      ? 'Availability unknown'
+      : '$spacesAvailable spots';
+  String get distanceLabel => distanceReference == null
+      ? '${distanceMiles.toStringAsFixed(1)} mi'
+      : '~${distanceMiles.toStringAsFixed(1)} mi to $distanceReference';
 
   PermitEligibility eligibilityFor(Set<ParkingPermit> selectedPermits) {
     if (selectedPermits.isEmpty) return PermitEligibility.notConfigured;

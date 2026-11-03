@@ -120,7 +120,7 @@ class _DetailsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final isAvailable = lot.spacesAvailable > 0;
+    final isAvailable = lot.isAvailable;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
@@ -148,7 +148,11 @@ class _DetailsContent extends StatelessWidget {
                   ),
                   const Spacer(),
                   _AvailabilityBadge(
-                    label: isAvailable ? 'Available now' : 'Currently full',
+                    label: lot.spacesAvailable == null
+                        ? 'Not reported'
+                        : isAvailable
+                        ? 'Available now'
+                        : 'Currently full',
                     isAvailable: isAvailable,
                   ),
                 ],
@@ -179,7 +183,7 @@ class _DetailsContent extends StatelessWidget {
               child: _SummaryCard(
                 icon: Icons.directions_walk_rounded,
                 label: 'Distance',
-                value: '${lot.distanceMiles.toStringAsFixed(1)} mi',
+                value: lot.distanceLabel,
               ),
             ),
             const SizedBox(width: 10),
@@ -195,18 +199,22 @@ class _DetailsContent extends StatelessWidget {
               child: _SummaryCard(
                 icon: Icons.directions_car_filled_outlined,
                 label: 'Available',
-                value: '${lot.spacesAvailable}',
+                value: lot.spacesAvailable?.toString() ?? 'Unknown',
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Semantics(
-          label: isAvailable
+          label: lot.spacesAvailable == null
+              ? 'Parking availability is not reported'
+              : isAvailable
               ? '${lot.spacesAvailable} parking spaces available'
               : 'No parking spaces currently available',
           child: Text(
-            isAvailable
+            lot.spacesAvailable == null
+                ? 'Live availability is not provided for this lot.'
+                : isAvailable
                 ? 'Availability can change quickly on event days.'
                 : 'Check back soon or explore another nearby lot.',
             style: Theme.of(context).textTheme.bodySmall

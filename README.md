@@ -16,6 +16,7 @@ Help students and football fans find parking before arriving at busy locations.
 - **Interactive Map:** Explore parking locations visually.
 - **Location Details:** View information about available parking options.
 - **Saved Parking:** Tap a lot's bookmark to save it, then open the Saved tab to find or remove it. Saved lots stay on the current device or browser after restarting the app.
+- **Campus Lots:** Browse 18 parking locations, including 15 additional lots verified against LSU's campus map. Newly imported lots show unknown availability rather than simulated space counts. See [location sources](docs/parking_locations.md).
 - **Permit Eligibility:** Select LSU parking permits in the Profile tab to highlight eligible lots and dim restricted lots across the app.
 - **User-Friendly Interface:** Navigate the app with a clean, modern design.
 - **Responsive Design:** Designed with usability across different screen sizes in mind.

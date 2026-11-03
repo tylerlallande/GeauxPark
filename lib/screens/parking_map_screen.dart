@@ -468,7 +468,7 @@ class _SelectedLotCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${lot.spacesAvailable} spots · ${lot.priceLabel}',
+                      '${lot.spacesLabel} · ${lot.priceLabel}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall

@@ -11,6 +11,44 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  testWidgets('official map lots can be searched, saved, and opened', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(SearchBar), 'Bernie Moore');
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byTooltip('Save Bernie Moore Lot (104)'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('NOT REPORTED'), findsOneWidget);
+    expect(find.text('FULL'), findsNothing);
+    await tester.tap(find.byTooltip('Save Bernie Moore Lot (104)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saved'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bernie Moore Lot (104)'), findsOneWidget);
+    await tester.tap(find.text('Bernie Moore Lot (104)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Not reported'), findsOneWidget);
+    expect(find.text('Currently full'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text(
+        'Bernie Moore Lot (104) is listed by LSU as Commuter (Zone 1) parking.',
+      ),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.text(
+        'Bernie Moore Lot (104) is listed by LSU as Commuter (Zone 1) parking.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('saved parking persists after restart and can be removed', (
     tester,
   ) async {

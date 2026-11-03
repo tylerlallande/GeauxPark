@@ -1,6 +1,9 @@
 import 'parking_locations.dart';
+import 'campus_parking_locations.dart';
 
 final sampleParkingDetails = <String, Map<String, dynamic>>{
+  for (final location in campusParkingLocations)
+    location.id: location.toDetails(),
   for (final entry in _details.entries)
     entry.key: {
       ...entry.value,

@@ -1,7 +1,8 @@
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
+import 'campus_parking_locations.dart';
 
-const sampleParkingLots = <ParkingLot>[
+final sampleParkingLots = <ParkingLot>[
   ParkingLot(
     id: 'union-square-garage',
     name: 'Union Square Garage',
@@ -36,4 +37,5 @@ const sampleParkingLots = <ParkingLot>[
     isAccessible: false,
     permitTypes: {ParkingPermit.nicholsonGatewayResident},
   ),
+  ...campusParkingLocations.map((location) => location.toParkingLot()),
 ];

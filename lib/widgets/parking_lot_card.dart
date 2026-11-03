@@ -79,15 +79,23 @@ class ParkingLotCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: lot.spacesAvailable > 0
+                        color: lot.spacesAvailable == null
+                            ? colors.surfaceContainerHighest
+                            : lot.isAvailable
                             ? colors.tertiary.withValues(alpha: 0.1)
                             : colors.errorContainer,
                         borderRadius: BorderRadius.circular(AppRadii.tag),
                       ),
                       child: Text(
-                        lot.spacesAvailable > 0 ? 'OPEN NOW' : 'FULL',
+                        lot.spacesAvailable == null
+                            ? 'NOT REPORTED'
+                            : lot.isAvailable
+                            ? 'OPEN NOW'
+                            : 'FULL',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: lot.spacesAvailable > 0
+                          color: lot.spacesAvailable == null
+                              ? colors.onSurfaceVariant
+                              : lot.isAvailable
                               ? colors.tertiary
                               : colors.onErrorContainer,
                         ),
@@ -113,7 +121,7 @@ class ParkingLotCard extends StatelessWidget {
                       children: [
                         _LotFact(
                           icon: Icons.directions_walk_rounded,
-                          text: '${lot.distanceMiles.toStringAsFixed(1)} mi',
+                          text: lot.distanceLabel,
                         ),
                         _LotFact(
                           icon: Icons.local_offer_outlined,
@@ -121,7 +129,7 @@ class ParkingLotCard extends StatelessWidget {
                         ),
                         _LotFact(
                           icon: Icons.directions_car_filled_outlined,
-                          text: '${lot.spacesAvailable} spots',
+                          text: lot.spacesLabel,
                           color: colors.tertiary,
                         ),
                       ],
