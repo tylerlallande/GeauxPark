@@ -1,4 +1,15 @@
-const sampleParkingDetails = <String, Map<String, dynamic>>{
+import 'parking_locations.dart';
+
+final sampleParkingDetails = <String, Map<String, dynamic>>{
+  for (final entry in _details.entries)
+    entry.key: {
+      ...entry.value,
+      'latitude': parkingLocations[entry.key]!.latitude,
+      'longitude': parkingLocations[entry.key]!.longitude,
+    },
+};
+
+const _details = <String, Map<String, dynamic>>{
   'union-square-garage': {
     'lotId': 'union-square-garage',
     'description':
@@ -7,8 +18,6 @@ const sampleParkingDetails = <String, Map<String, dynamic>>{
     'eventRestrictions':
         'Event pricing and entry restrictions may apply on game days.',
     'amenities': ['Covered parking', 'Accessible spaces', 'Well lit'],
-    'latitude': 30.4121,
-    'longitude': -91.1773,
   },
   'west-stadium-lot': {
     'lotId': 'west-stadium-lot',
@@ -16,8 +25,6 @@ const sampleParkingDetails = <String, Map<String, dynamic>>{
     'hours': 'Hours vary by campus event',
     'eventRestrictions': 'A valid event permit may be required before kickoff.',
     'amenities': ['Accessible spaces', 'Event shuttle nearby'],
-    'latitude': 30.4120,
-    'longitude': -91.1846,
   },
   'nicholson-gateway': {
     'lotId': 'nicholson-gateway',
@@ -25,7 +32,5 @@ const sampleParkingDetails = <String, Map<String, dynamic>>{
         'Parking near Nicholson Gateway with access to campus transit routes.',
     'hours': 'Open daily; posted restrictions apply',
     'amenities': ['Campus transit nearby'],
-    'latitude': 30.4032,
-    'longitude': -91.1786,
   },
 };

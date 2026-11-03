@@ -13,8 +13,8 @@
     "hours": "Open daily, 6:00 AM–11:00 PM",
     "eventRestrictions": "Event pricing and entry restrictions may apply on game days.",
     "amenities": ["Covered parking", "Accessible spaces", "Well lit"],
-    "latitude": 30.4121,
-    "longitude": -91.1773
+    "latitude": 30.413082,
+    "longitude": -91.174782
   },
   {
     "id": "west-stadium-lot",
@@ -30,8 +30,8 @@
     "hours": "Hours vary by campus event",
     "eventRestrictions": "A valid event permit may be required before kickoff.",
     "amenities": ["Accessible spaces", "Event shuttle nearby"],
-    "latitude": 30.412,
-    "longitude": -91.1846
+    "latitude": 30.411709,
+    "longitude": -91.185799
   },
   {
     "id": "nicholson-gateway",
@@ -46,7 +46,7 @@
     "description": "Parking near Nicholson Gateway with access to campus transit routes.",
     "hours": "Open daily; posted restrictions apply",
     "amenities": ["Campus transit nearby"],
-    "latitude": 30.4032,
-    "longitude": -91.1786
+    "latitude": 30.413839,
+    "longitude": -91.188286
   }
 ]

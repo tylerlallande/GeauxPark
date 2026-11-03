@@ -4,9 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../data/sample_parking_lots.dart';
+import '../data/parking_locations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../theme/app_theme.dart';
@@ -34,11 +35,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   bool _isLocating = false;
   bool _isTrackingLocation = false;
 
-  // Approximate campus positions for the demo lots, centered around LSU.
-  static const _lotLocations = <String, LatLng>{
-    'union-square-garage': LatLng(30.41355, -91.18015),
-    'west-stadium-lot': LatLng(30.41165, -91.18820),
-    'nicholson-gateway': LatLng(30.40985, -91.17545),
+  static final _lotLocations = {
+    for (final lot in sampleParkingLots)
+      if (parkingLocations[lot.id] case final location?)
+        lot.id: LatLng(location.latitude, location.longitude),
   };
 
   ParkingLot _selectedLot = sampleParkingLots.first;
@@ -106,9 +106,14 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                               final isIneligible =
                                   eligibility == PermitEligibility.ineligible;
                               return Marker(
+                                key: ValueKey('parking-marker-${lot.id}'),
                                 point: location,
                                 width: 54,
                                 height: 62,
+                                // Keep the pin tip on the coordinate at every
+                                // zoom level and while rotating the map.
+                                alignment: Alignment.topCenter,
+                                rotate: true,
                                 child: GestureDetector(
                                   onTap: () =>
                                       setState(() => _selectedLot = lot),
@@ -154,12 +159,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                             size: 25,
                                           ),
                                         ),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          color: isIneligible
-                                              ? colors.onSurfaceVariant
-                                              : colors.primary,
-                                          size: 16,
+                                        ClipPath(
+                                          clipper: const _PinTipClipper(),
+                                          child: Container(
+                                            width: 16,
+                                            height: 16,
+                                            color: isIneligible
+                                                ? colors.onSurfaceVariant
+                                                : colors.primary,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -329,6 +337,19 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     _positionSubscription?.cancel();
     super.dispose();
   }
+}
+
+class _PinTipClipper extends CustomClipper<Path> {
+  const _PinTipClipper();
+
+  @override
+  Path getClip(Size size) => Path()
+    ..lineTo(size.width, 0)
+    ..lineTo(size.width / 2, size.height)
+    ..close();
+
+  @override
+  bool shouldReclip(_PinTipClipper oldClipper) => false;
 }
 
 class _LocationIssue implements Exception {

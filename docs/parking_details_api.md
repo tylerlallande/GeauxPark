@@ -21,8 +21,8 @@ Successful response:
   "hours": "Open daily, 6:00 AM–11:00 PM",
   "eventRestrictions": "Event pricing may apply on game days.",
   "amenities": ["Covered parking", "Accessible spaces", "Well lit"],
-  "latitude": 30.4121,
-  "longitude": -91.1773,
+  "latitude": 30.413082,
+  "longitude": -91.174782,
   "availabilityUpdatedAt": "2026-11-01T18:30:00Z"
 }
 ```
