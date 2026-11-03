@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
+import '../models/parking_permit.dart';
 import '../theme/app_theme.dart';
 
 class ParkingMapScreen extends StatefulWidget {
@@ -15,10 +16,12 @@ class ParkingMapScreen extends StatefulWidget {
     super.key,
     required this.savedLotIds,
     required this.onLotSelected,
+    required this.selectedPermits,
   });
 
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot> onLotSelected;
+  final Set<ParkingPermit> selectedPermits;
 
   @override
   State<ParkingMapScreen> createState() => _ParkingMapScreenState();
@@ -61,6 +64,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             style: Theme.of(context).textTheme.bodyLarge
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
+          if (widget.selectedPermits.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const _PermitLegend(),
+          ],
           const SizedBox(height: 18),
           Expanded(
             child: ClipRRect(
@@ -93,6 +100,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                               final location = _lotLocations[lot.id];
                               if (location == null) return null;
                               final isSelected = lot.id == _selectedLot.id;
+                              final eligibility = lot.eligibilityFor(
+                                widget.selectedPermits,
+                              );
+                              final isIneligible =
+                                  eligibility == PermitEligibility.ineligible;
                               return Marker(
                                 point: location,
                                 width: 54,
@@ -100,46 +112,57 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                 child: GestureDetector(
                                   onTap: () =>
                                       setState(() => _selectedLot = lot),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 46,
-                                        height: 46,
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? colors.primary
-                                              : colors.surface,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
+                                  child: Opacity(
+                                    opacity: isIneligible ? 0.42 : 1,
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          width: 46,
+                                          height: 46,
+                                          decoration: BoxDecoration(
                                             color: isSelected
-                                                ? colors.surface
-                                                : colors.primary,
-                                            width: 2,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: colors.shadow.withValues(
-                                                alpha: 0.2,
-                                              ),
-                                              blurRadius: 8,
-                                              offset: Offset(0, 3),
+                                                ? colors.primary
+                                                : colors.surface,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isIneligible
+                                                  ? colors.onSurfaceVariant
+                                                  : isSelected
+                                                  ? colors.surface
+                                                  : colors.primary,
+                                              width: 2,
                                             ),
-                                          ],
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: colors.shadow.withValues(
+                                                  alpha: 0.2,
+                                                ),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Icon(
+                                            isIneligible
+                                                ? Icons.block_rounded
+                                                : Icons.local_parking_rounded,
+                                            color: isSelected
+                                                ? colors.onPrimary
+                                                : isIneligible
+                                                ? colors.onSurfaceVariant
+                                                : colors.primary,
+                                            size: 25,
+                                          ),
                                         ),
-                                        child: Icon(
-                                          Icons.local_parking_rounded,
-                                          color: isSelected
-                                              ? colors.onPrimary
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: isIneligible
+                                              ? colors.onSurfaceVariant
                                               : colors.primary,
-                                          size: 25,
+                                          size: 16,
                                         ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_drop_down,
-                                        color: colors.primary,
-                                        size: 16,
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -206,6 +229,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           _SelectedLotCard(
             lot: _selectedLot,
             isSaved: widget.savedLotIds.contains(_selectedLot.id),
+            permitEligibility: _selectedLot.eligibilityFor(
+              widget.selectedPermits,
+            ),
             onTap: () => widget.onLotSelected(_selectedLot),
           ),
         ],
@@ -384,11 +410,13 @@ class _SelectedLotCard extends StatelessWidget {
     required this.lot,
     required this.isSaved,
     required this.onTap,
+    required this.permitEligibility,
   });
 
   final ParkingLot lot;
   final bool isSaved;
   final VoidCallback onTap;
+  final PermitEligibility permitEligibility;
 
   @override
   Widget build(BuildContext context) {
@@ -425,6 +453,24 @@ class _SelectedLotCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(color: colors.onSurfaceVariant),
                     ),
+                    if (permitEligibility !=
+                        PermitEligibility.notConfigured) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        permitEligibility == PermitEligibility.eligible
+                            ? 'Works with your permit'
+                            : 'Your permit is not accepted here',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color:
+                                  permitEligibility ==
+                                      PermitEligibility.eligible
+                                  ? colors.tertiary
+                                  : colors.error,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -437,6 +483,26 @@ class _SelectedLotCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PermitLegend extends StatelessWidget {
+  const _PermitLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(Icons.verified_outlined, size: 16, color: colors.tertiary),
+        const SizedBox(width: 4),
+        const Text('Eligible'),
+        const SizedBox(width: 14),
+        Icon(Icons.block_rounded, size: 16, color: colors.onSurfaceVariant),
+        const SizedBox(width: 4),
+        const Text('Permit restricted'),
+      ],
     );
   }
 }

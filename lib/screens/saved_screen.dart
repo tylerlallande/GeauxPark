@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
+import '../models/parking_permit.dart';
 import '../widgets/parking_lot_card.dart';
 import '../theme/app_theme.dart';
 
@@ -15,6 +16,7 @@ class SavedScreen extends StatelessWidget {
     required this.onToggleSaved,
     required this.onBrowseParking,
     required this.onLotSelected,
+    required this.selectedPermits,
   });
 
   final Set<String> savedLotIds;
@@ -24,6 +26,7 @@ class SavedScreen extends StatelessWidget {
   final ValueChanged<ParkingLot>? onToggleSaved;
   final VoidCallback onBrowseParking;
   final ValueChanged<ParkingLot> onLotSelected;
+  final Set<ParkingPermit> selectedPermits;
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +126,7 @@ class SavedScreen extends StatelessWidget {
                       ? null
                       : () => onToggleSaved!(lot),
                   onTap: () => onLotSelected(lot),
+                  permitEligibility: lot.eligibilityFor(selectedPermits),
                 );
               },
             ),

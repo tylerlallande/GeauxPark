@@ -11,7 +11,7 @@ void main() {
   final source = jsonEncode([
     {
       'id': 'student-lot',
-      'permitTypes': ['student'],
+      'permitTypes': ['commuter'],
       'gameDay': true,
     },
     {
@@ -25,6 +25,7 @@ void main() {
   test('filters lots by game-day status and permit type', () {
     expect(store.find(gameDay: true).single['id'], 'student-lot');
     expect(store.find(permitType: 'VISITOR').single['id'], 'visitor-lot');
+    expect(store.find(permitType: 'COMMUTER').single['id'], 'student-lot');
   });
 
   test('returns a lot by id and null for an unknown id', () {

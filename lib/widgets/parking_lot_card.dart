@@ -10,12 +10,14 @@ class ParkingLotCard extends StatelessWidget {
     required this.onTap,
     required this.isSaved,
     required this.onToggleSaved,
+    this.permitEligibility = PermitEligibility.notConfigured,
   });
 
   final ParkingLot lot;
   final VoidCallback onTap;
   final bool isSaved;
   final VoidCallback? onToggleSaved;
+  final PermitEligibility permitEligibility;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +93,11 @@ class ParkingLotCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (permitEligibility !=
+                        PermitEligibility.notConfigured) ...[
+                      const SizedBox(height: 6),
+                      _PermitStatus(eligibility: permitEligibility),
+                    ],
                     const SizedBox(height: 8),
                     Text(
                       lot.address,
@@ -135,6 +142,35 @@ class ParkingLotCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PermitStatus extends StatelessWidget {
+  const _PermitStatus({required this.eligibility});
+
+  final PermitEligibility eligibility;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isEligible = eligibility == PermitEligibility.eligible;
+    final color = isEligible ? colors.tertiary : colors.error;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isEligible ? Icons.verified_outlined : Icons.block_rounded,
+          size: 15,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          isEligible ? 'Works with your permit' : 'Permit not accepted',
+          style: Theme.of(context).textTheme.labelMedium
+              ?.copyWith(color: color, fontWeight: FontWeight.w800),
+        ),
+      ],
     );
   }
 }
