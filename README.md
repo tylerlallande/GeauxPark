@@ -14,6 +14,7 @@ Help students and football fans find parking before arriving at busy locations.
 
 - **Parking Search:** Find parking locations in your desired area.
 - **Interactive Map:** Explore parking locations visually.
+- **Directions:** Open Map, select a parking pin, and tap Get directions. Allow location access, then choose Drive or Walk to open Google Maps from your current position to that lot. Location is refreshed for each request.
 - **Location Details:** View information about available parking options.
 - **Saved Parking:** Tap a lot's bookmark to save it, then open the Saved tab to find or remove it. Saved lots stay on the current device or browser after restarting the app.
 - **Campus Lots:** Browse 18 parking locations, including 15 additional lots verified against LSU's campus map. Newly imported lots show unknown availability rather than simulated space counts. See [location sources](docs/parking_locations.md).

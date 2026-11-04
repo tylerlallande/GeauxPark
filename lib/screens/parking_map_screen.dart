@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -12,6 +11,7 @@ import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../theme/app_theme.dart';
 import '../widgets/parking_lot_tags.dart';
+import '../services/directions_service.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({
@@ -19,11 +19,13 @@ class ParkingMapScreen extends StatefulWidget {
     required this.savedLotIds,
     required this.onLotSelected,
     required this.selectedPermits,
+    this.directionsService = const DirectionsService(),
   });
 
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot> onLotSelected;
   final Set<ParkingPermit> selectedPermits;
+  final DirectionsService directionsService;
 
   @override
   State<ParkingMapScreen> createState() => _ParkingMapScreenState();
@@ -35,6 +37,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   LatLng? _userLocation;
   bool _isLocating = false;
   bool _isTrackingLocation = false;
+  bool _isGettingDirections = false;
+  bool _isDirectionsOpen = false;
 
   static final _lotLocations = {
     for (final lot in sampleParkingLots)
@@ -227,7 +231,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     child: _MyLocationButton(
                       isLoading: _isLocating,
                       isTracking: _isTrackingLocation,
-                      onPressed: _isLocating ? null : _toggleLocationTracking,
+                      onPressed: _isLocating || _isGettingDirections
+                          ? null
+                          : _toggleLocationTracking,
                     ),
                   ),
                 ],
@@ -243,6 +249,28 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             ),
             onTap: () => widget.onLotSelected(_selectedLot),
           ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey('map-get-directions'),
+              onPressed:
+                  _isGettingDirections || _isDirectionsOpen || _isLocating
+                  ? null
+                  : _getDirections,
+              icon: _isGettingDirections
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.directions_rounded),
+              label: Text(
+                _isGettingDirections
+                    ? 'Getting your location…'
+                    : 'Get directions',
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -252,6 +280,65 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final camera = _mapController.camera;
     final zoom = (camera.zoom + amount).clamp(12.0, 18.0);
     _mapController.move(camera.center, zoom);
+  }
+
+  Future<void> _getDirections() async {
+    if (_isGettingDirections || _isDirectionsOpen || _isLocating) return;
+    final lot = _selectedLot;
+    final destination = _lotLocations[lot.id];
+    if (destination == null) {
+      _showLocationMessage('Directions are unavailable for this lot.');
+      return;
+    }
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    setState(() => _isGettingDirections = true);
+    try {
+      // Always request a fresh position, even if live tracking has been stopped.
+      final origin = await widget.directionsService.currentLocation();
+      if (!mounted) return;
+      setState(() {
+        _userLocation = origin;
+        _isGettingDirections = false;
+        _isDirectionsOpen = true;
+      });
+      // Choose a mode after location is ready so the browser launch happens
+      // directly from a button tap, avoiding popup blocking after an await.
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (context) => _DirectionsSheet(
+          lot: lot,
+          origin: origin,
+          destination: destination,
+          service: widget.directionsService,
+        ),
+      );
+    } on DirectionsException catch (error) {
+      _showDirectionsError(error.message);
+    } catch (_) {
+      _showDirectionsError(
+        'Could not get your location. Check location access and try again.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingDirections = false;
+          _isDirectionsOpen = false;
+        });
+      }
+    }
+  }
+
+  void _showDirectionsError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(label: 'Retry', onPressed: _getDirections),
+      ),
+    );
   }
 
   Future<void> _toggleLocationTracking() async {
@@ -264,35 +351,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
     setState(() => _isLocating = true);
     try {
-      if (!kIsWeb) {
-        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) {
-          throw const _LocationIssue(
-            'Turn on location services and try again.',
-          );
-        }
-
-        var permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-        if (permission == LocationPermission.denied) {
-          throw const _LocationIssue('Location permission was denied.');
-        }
-        if (permission == LocationPermission.deniedForever) {
-          throw const _LocationIssue(
-            'Allow location access for GeauxPark in your device settings.',
-          );
-        }
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
-      _updateUserLocation(position);
+      final location = await widget.directionsService.currentLocation();
+      if (!mounted) return;
+      _updateMapLocation(location);
       _positionSubscription =
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
@@ -309,7 +370,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             cancelOnError: true,
           );
       if (mounted) setState(() => _isTrackingLocation = true);
-    } on _LocationIssue catch (error) {
+    } on DirectionsException catch (error) {
       _showLocationMessage(error.message);
     } catch (_) {
       _showLocationMessage(
@@ -321,8 +382,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 
   void _updateUserLocation(Position position) {
+    _updateMapLocation(LatLng(position.latitude, position.longitude));
+  }
+
+  void _updateMapLocation(LatLng location) {
     if (!mounted) return;
-    final location = LatLng(position.latitude, position.longitude);
     setState(() => _userLocation = location);
     _mapController.move(location, _mapController.camera.zoom);
   }
@@ -340,6 +404,117 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 }
 
+class _DirectionsSheet extends StatefulWidget {
+  const _DirectionsSheet({
+    required this.lot,
+    required this.origin,
+    required this.destination,
+    required this.service,
+  });
+
+  final ParkingLot lot;
+  final LatLng origin;
+  final LatLng destination;
+  final DirectionsService service;
+
+  @override
+  State<_DirectionsSheet> createState() => _DirectionsSheetState();
+}
+
+class _DirectionsSheetState extends State<_DirectionsSheet> {
+  bool _opening = false;
+  String? _error;
+
+  Future<void> _open(DirectionsMode mode) async {
+    if (_opening) return;
+    setState(() {
+      _opening = true;
+      _error = null;
+    });
+    try {
+      final opened = await widget.service.openDirections(
+        origin: widget.origin,
+        destination: widget.destination,
+        mode: mode,
+      );
+      if (!mounted) return;
+      if (opened) {
+        Navigator.of(context).pop();
+      } else {
+        setState(
+          () => _error = 'Could not open Google Maps. Please try again.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = 'Could not open Google Maps. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Directions to ${widget.lot.name}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text('From your current location · Opens Google Maps'),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.icon(
+                  key: const ValueKey('directions-driving'),
+                  onPressed: _opening
+                      ? null
+                      : () => _open(DirectionsMode.driving),
+                  icon: const Icon(Icons.directions_car_rounded),
+                  label: const Text('Drive'),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('directions-walking'),
+                  onPressed: _opening
+                      ? null
+                      : () => _open(DirectionsMode.walking),
+                  icon: const Icon(Icons.directions_walk_rounded),
+                  label: const Text('Walk'),
+                ),
+              ],
+            ),
+            if (_opening) ...[
+              const SizedBox(height: 12),
+              const Text('Opening Google Maps…'),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PinTipClipper extends CustomClipper<Path> {
   const _PinTipClipper();
 
@@ -351,12 +526,6 @@ class _PinTipClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(_PinTipClipper oldClipper) => false;
-}
-
-class _LocationIssue implements Exception {
-  const _LocationIssue(this.message);
-
-  final String message;
 }
 
 class _MyLocationButton extends StatelessWidget {
