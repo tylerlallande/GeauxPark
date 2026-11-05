@@ -40,6 +40,23 @@ The goal of Geaux Park is to simplify the parking experience by making it easier
 - Version Control: Brandon Avila
 - UI/UX Designer: Genesis Revelation
 
+## Download
+
+Install the latest Android build from [Releases](https://github.com/tylerlallande/GeauxPark/releases): download the `.apk` on your phone and open it (allow "Install unknown apps" if Android asks).
+
+### Making a release (Version Control)
+
+Releases are automated. Tag a commit on `main` with a version and push the tag:
+
+```bash
+git switch main
+git pull --ff-only origin main
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions analyzes, tests, and builds the APK (version name set from the tag), then publishes a GitHub Release named after the tag with the APK attached and release notes generated from the merged pull requests.
+
 ##  Getting Started
 
 ### Prerequisites
