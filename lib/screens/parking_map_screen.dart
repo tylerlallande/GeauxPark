@@ -1,23 +1,37 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../data/sample_parking_lots.dart';
+import '../data/parking_locations.dart';
 import '../models/parking_lot.dart';
+import '../models/parking_permit.dart';
+import '../theme/app_theme.dart';
+import '../widgets/parking_lot_tags.dart';
+import '../widgets/road_routing_consent.dart';
+import '../services/directions_service.dart';
+import '../services/road_routing_service.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({
     super.key,
     required this.savedLotIds,
     required this.onLotSelected,
+    required this.selectedPermits,
+    this.directionsLotId,
+    this.directionsOrigin,
+    this.directionsService = const DirectionsService(),
   });
 
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot> onLotSelected;
+  final Set<ParkingPermit> selectedPermits;
+  final String? directionsLotId;
+  final LatLng? directionsOrigin;
+  final DirectionsService directionsService;
 
   @override
   State<ParkingMapScreen> createState() => _ParkingMapScreenState();
@@ -29,167 +43,314 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   LatLng? _userLocation;
   bool _isLocating = false;
   bool _isTrackingLocation = false;
+  bool _isGettingDirections = false;
+  bool _showRoute = false;
+  RoadRoute? _roadRoute;
+  String? _routeError;
+  final _roadRoutingService = const RoadRoutingService();
 
-  // Approximate campus positions for the demo lots, centered around LSU.
-  static const _lotLocations = <String, LatLng>{
-    'union-square-garage': LatLng(30.41355, -91.18015),
-    'west-stadium-lot': LatLng(30.41165, -91.18820),
-    'nicholson-gateway': LatLng(30.40985, -91.17545),
+  static final _lotLocations = {
+    for (final lot in sampleParkingLots)
+      if (parkingLocations[lot.id] case final location?)
+        lot.id: LatLng(location.latitude, location.longitude),
   };
 
   ParkingLot _selectedLot = sampleParkingLots.first;
+
+  @override
+  void didUpdateWidget(covariant ParkingMapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.directionsLotId == null ||
+        (widget.directionsLotId == oldWidget.directionsLotId &&
+            widget.directionsOrigin == oldWidget.directionsOrigin)) {
+      return;
+    }
+    final lotIndex = sampleParkingLots.indexWhere(
+      (lot) => lot.id == widget.directionsLotId,
+    );
+    if (lotIndex < 0) return;
+    final lot = sampleParkingLots[lotIndex];
+    final origin = widget.directionsOrigin;
+    if (origin == null) return;
+    final destination = _lotLocations[lot.id];
+    if (destination == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedLot = lot;
+        _userLocation = origin;
+        _showRoute = true;
+        _roadRoute = null;
+        _routeError = null;
+        _isGettingDirections = true;
+      });
+      unawaited(_fetchRoadRoute(origin, destination));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screen,
+        AppSpacing.section,
+        AppSpacing.screen,
+        AppSpacing.md,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Parking map', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 6),
           Text(
-            'Explore parking near LSU',
-            style: Theme.of(context).textTheme.bodyMedium
+            _showRoute
+                ? 'Directions to ${_selectedLot.name}'
+                : 'Explore parking near LSU',
+            style: Theme.of(context).textTheme.bodyLarge
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
+          if (widget.selectedPermits.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const _PermitLegend(),
+          ],
           const SizedBox(height: 18),
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: FlutterMap(
-                mapController: _mapController,
-                options: const MapOptions(
-                  initialCenter: LatLng(30.4120, -91.1812),
-                  initialZoom: 15.2,
-                  minZoom: 12,
-                  maxZoom: 18,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.geauxpark.app',
-                  ),
-                  MarkerLayer(
-                    markers:
-                        sampleParkingLots
-                            .map((lot) {
-                              final location = _lotLocations[lot.id];
-                              if (location == null) return null;
-                              final isSelected = lot.id == _selectedLot.id;
-                              return Marker(
-                                point: location,
-                                width: 54,
-                                height: 62,
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      setState(() => _selectedLot = lot),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 46,
-                                        height: 46,
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? colors.primary
-                                              : colors.surface,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? colors.surface
-                                                : colors.primary,
-                                            width: 2,
-                                          ),
-                                          boxShadow: const [
-                                            BoxShadow(
-                                              color: Color(0x33000000),
-                                              blurRadius: 8,
-                                              offset: Offset(0, 3),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(
-                                          Icons.local_parking_rounded,
-                                          color: isSelected
-                                              ? colors.onPrimary
-                                              : colors.primary,
-                                          size: 25,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_drop_down,
-                                        color: colors.primary,
-                                        size: 16,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            })
-                            .whereType<Marker>()
-                            .toList()
-                          ..addAll(
-                            _userLocation == null
-                                ? const []
-                                : [
-                                    Marker(
-                                      point: _userLocation!,
-                                      width: 34,
-                                      height: 34,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 4,
-                                          ),
-                                          boxShadow: const [
-                                            BoxShadow(
-                                              color: Color(0x44000000),
-                                              blurRadius: 8,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+            child: Column(
+              children: [
+                Expanded(
+                  flex: _showRoute ? 6 : 1,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadii.panel),
+                    child: FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: const LatLng(30.4120, -91.1812),
+                        initialZoom: 15.2,
+                        // Open with every lot pin fully on screen, clear of the
+                        // location and zoom buttons at the top.
+                        initialCameraFit: CameraFit.coordinates(
+                          coordinates: _lotLocations.values.toList(),
+                          padding: const EdgeInsets.fromLTRB(48, 96, 48, 56),
+                          maxZoom: 16.5,
+                        ),
+                        minZoom: 12,
+                        maxZoom: 18,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.geauxpark.app',
+                        ),
+                        if (_roadRoute != null)
+                          PolylineLayer(
+                            polylines: [
+                              Polyline(
+                                points: _roadRoute!.points,
+                                color: colors.primary,
+                                strokeWidth: 5,
+                              ),
+                            ],
                           ),
-                  ),
-                  RichAttributionWidget(
-                    attributions: [
-                      TextSourceAttribution('OpenStreetMap contributors'),
-                    ],
-                  ),
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: _MapZoomControls(
-                      onZoomIn: () => _changeZoom(1),
-                      onZoomOut: () => _changeZoom(-1),
+                        MarkerLayer(
+                          markers:
+                              sampleParkingLots
+                                  .map((lot) {
+                                    final location = _lotLocations[lot.id];
+                                    if (location == null) return null;
+                                    final isSelected =
+                                        lot.id == _selectedLot.id;
+                                    final eligibility = lot.eligibilityFor(
+                                      widget.selectedPermits,
+                                    );
+                                    final isIneligible =
+                                        eligibility ==
+                                        PermitEligibility.ineligible;
+                                    return Marker(
+                                      key: ValueKey('parking-marker-${lot.id}'),
+                                      point: location,
+                                      width: 54,
+                                      height: 62,
+                                      // Keep the pin tip on the coordinate at every
+                                      // zoom level and while rotating the map.
+                                      alignment: Alignment.topCenter,
+                                      rotate: true,
+                                      child: GestureDetector(
+                                        onTap: () =>
+                                            setState(() => _selectedLot = lot),
+                                        child: Opacity(
+                                          opacity: isIneligible ? 0.42 : 1,
+                                          child: Column(
+                                            children: [
+                                              Container(
+                                                width: 46,
+                                                height: 46,
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? colors.primary
+                                                      : colors.surface,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: isIneligible
+                                                        ? colors
+                                                              .onSurfaceVariant
+                                                        : isSelected
+                                                        ? colors.surface
+                                                        : colors.primary,
+                                                    width: 2,
+                                                  ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: colors.shadow
+                                                          .withValues(
+                                                            alpha: 0.2,
+                                                          ),
+                                                      blurRadius: 8,
+                                                      offset: const Offset(
+                                                        0,
+                                                        3,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Icon(
+                                                  isIneligible
+                                                      ? Icons.block_rounded
+                                                      : Icons
+                                                            .local_parking_rounded,
+                                                  color: isSelected
+                                                      ? colors.onPrimary
+                                                      : isIneligible
+                                                      ? colors.onSurfaceVariant
+                                                      : colors.primary,
+                                                  size: 25,
+                                                ),
+                                              ),
+                                              ClipPath(
+                                                clipper: const _PinTipClipper(),
+                                                child: Container(
+                                                  width: 16,
+                                                  height: 16,
+                                                  color: isIneligible
+                                                      ? colors.onSurfaceVariant
+                                                      : colors.primary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  })
+                                  .whereType<Marker>()
+                                  .toList()
+                                ..addAll(
+                                  _userLocation == null
+                                      ? const []
+                                      : [
+                                          Marker(
+                                            point: _userLocation!,
+                                            width: 34,
+                                            height: 34,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: colors.tertiary,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: colors.onTertiary,
+                                                  width: 4,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: colors.shadow
+                                                        .withValues(
+                                                          alpha: 0.27,
+                                                        ),
+                                                    blurRadius: 8,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                ),
+                        ),
+                        RichAttributionWidget(
+                          attributions: [
+                            TextSourceAttribution('OpenStreetMap contributors'),
+                          ],
+                        ),
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: _MapZoomControls(
+                            onZoomIn: () => _changeZoom(1),
+                            onZoomOut: () => _changeZoom(-1),
+                          ),
+                        ),
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: _MyLocationButton(
+                            isLoading: _isLocating,
+                            isTracking: _isTrackingLocation,
+                            onPressed: _isLocating || _isGettingDirections
+                                ? null
+                                : _toggleLocationTracking,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: _MyLocationButton(
-                      isLoading: _isLocating,
-                      isTracking: _isTrackingLocation,
-                      onPressed: _isLocating ? null : _toggleLocationTracking,
+                ),
+                if (_showRoute) ...[
+                  const SizedBox(height: 10),
+                  Expanded(
+                    flex: 4,
+                    child: _RouteStepsPanel(
+                      route: _roadRoute,
+                      isLoading: _isGettingDirections,
+                      error: _routeError,
+                      onRetry: _getDirections,
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
           const SizedBox(height: 14),
           _SelectedLotCard(
             lot: _selectedLot,
             isSaved: widget.savedLotIds.contains(_selectedLot.id),
+            permitEligibility: _selectedLot.eligibilityFor(
+              widget.selectedPermits,
+            ),
             onTap: () => widget.onLotSelected(_selectedLot),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey('map-get-directions'),
+              onPressed: _isGettingDirections || _isLocating
+                  ? null
+                  : _getDirections,
+              icon: _isGettingDirections
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.directions_rounded),
+              label: Text(
+                _isGettingDirections
+                    ? 'Getting your location…'
+                    : _roadRoute == null
+                    ? 'Get directions'
+                    : 'Refresh directions',
+              ),
+            ),
           ),
         ],
       ),
@@ -202,6 +363,84 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     _mapController.move(camera.center, zoom);
   }
 
+  Future<void> _getDirections() async {
+    if (_isGettingDirections || _isLocating) return;
+    final lot = _selectedLot;
+    final destination = _lotLocations[lot.id];
+    if (destination == null) {
+      _showLocationMessage('Directions are unavailable for this lot.');
+      return;
+    }
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    setState(() => _isGettingDirections = true);
+    try {
+      // Always request a fresh position, even if live tracking has been stopped.
+      final origin = await widget.directionsService.currentLocation();
+      if (!mounted) return;
+      if (!await confirmRoadRoutingConsent(context) || !mounted) return;
+      setState(() {
+        _userLocation = origin;
+        _showRoute = true;
+        _roadRoute = null;
+        _routeError = null;
+      });
+      await _fetchRoadRoute(origin, destination);
+    } on DirectionsException catch (error) {
+      _showDirectionsError(error.message);
+    } catch (_) {
+      _showDirectionsError(
+        'Could not get your location. Check location access and try again.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingDirections = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchRoadRoute(LatLng origin, LatLng destination) async {
+    try {
+      final route = await _roadRoutingService.drivingRoute(
+        origin: origin,
+        destination: destination,
+      );
+      if (!mounted) return;
+      setState(() {
+        _roadRoute = route;
+        _routeError = null;
+      });
+      _mapController.fitCamera(
+        CameraFit.coordinates(
+          coordinates: route.points,
+          padding: const EdgeInsets.fromLTRB(64, 108, 64, 320),
+          maxZoom: 17,
+        ),
+      );
+    } on RoadRoutingException catch (error) {
+      if (mounted) setState(() => _routeError = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _routeError = 'Could not load road directions. Check your connection and try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGettingDirections = false);
+    }
+  }
+
+  void _showDirectionsError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(label: 'Retry', onPressed: _getDirections),
+      ),
+    );
+  }
+
   Future<void> _toggleLocationTracking() async {
     if (_isTrackingLocation) {
       await _positionSubscription?.cancel();
@@ -212,35 +451,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
     setState(() => _isLocating = true);
     try {
-      if (!kIsWeb) {
-        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) {
-          throw const _LocationIssue(
-            'Turn on location services and try again.',
-          );
-        }
-
-        var permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-        if (permission == LocationPermission.denied) {
-          throw const _LocationIssue('Location permission was denied.');
-        }
-        if (permission == LocationPermission.deniedForever) {
-          throw const _LocationIssue(
-            'Allow location access for GeauxPark in your device settings.',
-          );
-        }
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
-      _updateUserLocation(position);
+      final location = await widget.directionsService.currentLocation();
+      if (!mounted) return;
+      _updateMapLocation(location);
       _positionSubscription =
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
@@ -257,7 +470,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             cancelOnError: true,
           );
       if (mounted) setState(() => _isTrackingLocation = true);
-    } on _LocationIssue catch (error) {
+    } on DirectionsException catch (error) {
       _showLocationMessage(error.message);
     } catch (_) {
       _showLocationMessage(
@@ -269,8 +482,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 
   void _updateUserLocation(Position position) {
+    _updateMapLocation(LatLng(position.latitude, position.longitude));
+  }
+
+  void _updateMapLocation(LatLng location) {
     if (!mounted) return;
-    final location = LatLng(position.latitude, position.longitude);
     setState(() => _userLocation = location);
     _mapController.move(location, _mapController.camera.zoom);
   }
@@ -288,10 +504,120 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 }
 
-class _LocationIssue implements Exception {
-  const _LocationIssue(this.message);
+class _RouteStepsPanel extends StatelessWidget {
+  const _RouteStepsPanel({
+    required this.route,
+    required this.isLoading,
+    required this.error,
+    required this.onRetry,
+  });
 
-  final String message;
+  final RoadRoute? route;
+  final bool isLoading;
+  final String? error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: route == null
+          ? Center(
+              child: error != null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(error!, textAlign: TextAlign.center),
+                        TextButton.icon(
+                          onPressed: onRetry,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Try again'),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (isLoading)
+                          const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        const SizedBox(width: 10),
+                        const Text('Finding a driving route…'),
+                      ],
+                    ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 6),
+                  child: Row(
+                    children: [
+                      Icon(Icons.directions_car_rounded, color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Driving directions',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${formatRouteDistance(route!.distanceMeters)} · ${formatRouteDuration(route!.durationSeconds)}',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: route!.steps.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final step = route!.steps[index];
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: colors.primaryContainer,
+                          foregroundColor: colors.onPrimaryContainer,
+                          child: Text(
+                            '${index + 1}',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                        ),
+                        title: Text(step.instruction),
+                        trailing: Text(
+                          formatRouteDistance(step.distanceMeters),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _PinTipClipper extends CustomClipper<Path> {
+  const _PinTipClipper();
+
+  @override
+  Path getClip(Size size) => Path()
+    ..lineTo(size.width, 0)
+    ..lineTo(size.width / 2, size.height)
+    ..close();
+
+  @override
+  bool shouldReclip(_PinTipClipper oldClipper) => false;
 }
 
 class _MyLocationButton extends StatelessWidget {
@@ -367,28 +693,30 @@ class _SelectedLotCard extends StatelessWidget {
     required this.lot,
     required this.isSaved,
     required this.onTap,
+    required this.permitEligibility,
   });
 
   final ParkingLot lot;
   final bool isSaved;
   final VoidCallback onTap;
+  final PermitEligibility permitEligibility;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Material(
-      color: colors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(20),
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(AppRadii.card),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: colors.primaryContainer,
-                foregroundColor: colors.onPrimaryContainer,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
                 child: const Icon(Icons.local_parking_rounded),
               ),
               const SizedBox(width: 12),
@@ -400,14 +728,34 @@ class _SelectedLotCard extends StatelessWidget {
                       lot.name,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
+                    const SizedBox(height: 6),
+                    ParkingLotTags(lot: lot),
                     const SizedBox(height: 3),
                     Text(
-                      '${lot.spacesAvailable} spots · ${lot.priceLabel}',
+                      '${lot.spacesLabel} · ${lot.priceLabel}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(color: colors.onSurfaceVariant),
                     ),
+                    if (permitEligibility !=
+                        PermitEligibility.notConfigured) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        permitEligibility == PermitEligibility.eligible
+                            ? 'Works with your permit'
+                            : 'Your permit is not accepted here',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color:
+                                  permitEligibility ==
+                                      PermitEligibility.eligible
+                                  ? colors.tertiary
+                                  : colors.error,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -420,6 +768,26 @@ class _SelectedLotCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PermitLegend extends StatelessWidget {
+  const _PermitLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(Icons.verified_outlined, size: 16, color: colors.tertiary),
+        const SizedBox(width: 4),
+        const Text('Eligible'),
+        const SizedBox(width: 14),
+        Icon(Icons.block_rounded, size: 16, color: colors.onSurfaceVariant),
+        const SizedBox(width: 4),
+        const Text('Permit restricted'),
+      ],
     );
   }
 }

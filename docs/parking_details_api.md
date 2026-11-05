@@ -4,10 +4,12 @@ The app reads parking detail data through `ParkingRepository`. The current
 `DemoParkingRepository` is temporary and can be replaced by an HTTP-backed
 implementation without changing the screens.
 
-## Proposed endpoint
+## Endpoint
 
 ```text
-GET /parking-lots/{lotId}
+GET /lots/{lotId}
+
+`GET /parking-lots/{lotId}` remains available as a compatibility alias.
 ```
 
 Successful response:
@@ -19,8 +21,8 @@ Successful response:
   "hours": "Open daily, 6:00 AM–11:00 PM",
   "eventRestrictions": "Event pricing may apply on game days.",
   "amenities": ["Covered parking", "Accessible spaces", "Well lit"],
-  "latitude": 30.4121,
-  "longitude": -91.1773,
+  "latitude": 30.413082,
+  "longitude": -91.174782,
   "availabilityUpdatedAt": "2026-11-01T18:30:00Z"
 }
 ```
@@ -37,9 +39,20 @@ Successful response:
 - Network and server failures should throw `ParkingRepositoryException` so the
   UI presents its retry state.
 
+## Lot list endpoint
+
+```text
+GET /lots
+GET /lots?gameDay=true&permitType=student
+```
+
+The response is an object containing a `lots` array. `gameDay` accepts only
+`true` or `false`; `permitType` is matched case-insensitively. A malformed
+`gameDay` value returns `400`, and an unknown route returns `404`.
+
 ## Connecting a server
 
-1. Create an API implementation of `ParkingRepository`.
+1. Run `dart run server/bin/server.dart` from the repository root.
 2. Fetch and decode the endpoint response.
 3. Construct the model with `ParkingDetails.fromJson`.
 4. Inject the API repository into `AppShell(parkingRepository: repository)`.

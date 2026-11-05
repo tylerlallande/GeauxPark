@@ -14,8 +14,12 @@ Help students and football fans find parking before arriving at busy locations.
 
 - **Parking Search:** Find parking locations in your desired area.
 - **Interactive Map:** Explore parking locations visually.
+- **Directions:** Open a lot and tap Get directions to see a road route and turn-by-turn driving steps in the built-in map. GeauxPark asks for your location and confirms before sending your start and destination coordinates to the public OSRM routing server. The Map tab can also calculate a route for its selected lot.
 - **Location Details:** View information about available parking options.
 - **Saved Parking:** Tap a lot's bookmark to save it, then open the Saved tab to find or remove it. Saved lots stay on the current device or browser after restarting the app.
+- **Campus Lots:** Browse 18 parking locations, including 15 additional lots verified against LSU's campus map. Newly imported lots show unknown availability rather than simulated space counts. See [location sources](docs/parking_locations.md).
+- **Lot Tags & Filters:** Filter Home results by Visitor, Commuter, Residential, Greek housing, Law, Park & Geaux, Garage, or Event. Select any matching lot types and combine quick filters (such as Available now and Accessible). Search matches tag names, and Clear resets search and filters. Tags also appear in Saved, details, and the map's selected-lot card.
+- **Permit Eligibility:** Select LSU parking permits in the Profile tab to highlight eligible lots and dim restricted lots across the app.
 - **User-Friendly Interface:** Navigate the app with a clean, modern design.
 - **Responsive Design:** Designed with usability across different screen sizes in mind.
 
@@ -66,6 +70,27 @@ The goal of Geaux Park is to simplify the parking experience by making it easier
 
 4. Before opening a pull request, run `flutter analyze` and `flutter test`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and review workflow.
 
+### Run the parking API
+
+The repository includes a dependency-free Dart API for the lot list and lot
+details screens. From the repository root, run:
+
+```bash
+dart run server/bin/server.dart
+```
+
+The server listens on `http://localhost:8080` by default. Set `PORT` or
+`GEAUXPARK_HOST` to change the bind settings. Available endpoints:
+
+```text
+GET /lots
+GET /lots?gameDay=true&permitType=student
+GET /lots/{id}
+```
+
+`/parking-lots/{id}` is also supported for compatibility with the original
+details API contract. The source data is in [`server/data/lots.json`](server/data/lots.json).
+
 ### Run on macOS
 
 ```bash
@@ -98,7 +123,7 @@ them for Flutter/Dart.
 
 - Integrate live parking availability.
 - Add parking filters and search preferences.
-- Provide directions to selected parking locations.
+- Add walking directions and offline route support.
 - Include parking prices and operating hours when available.
 - Add user accounts and saved parking locations.
 

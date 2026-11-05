@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/parking_lot.dart';
+import '../theme/app_theme.dart';
+import 'parking_lot_tags.dart';
 
 class ParkingLotCard extends StatelessWidget {
   const ParkingLotCard({
@@ -9,12 +11,14 @@ class ParkingLotCard extends StatelessWidget {
     required this.onTap,
     required this.isSaved,
     required this.onToggleSaved,
+    this.permitEligibility = PermitEligibility.notConfigured,
   });
 
   final ParkingLot lot;
   final VoidCallback onTap;
   final bool isSaved;
   final VoidCallback? onToggleSaved;
+  final PermitEligibility permitEligibility;
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +28,38 @@ class ParkingLotCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 56,
-                height: 72,
+                width: 58,
+                height: 76,
                 decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(16),
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  Icons.local_parking_rounded,
-                  color: colors.onPrimaryContainer,
-                  size: 30,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.local_parking_rounded,
+                      color: colors.onPrimary,
+                      size: 30,
+                    ),
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: colors.secondary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 14),
@@ -50,10 +71,45 @@ class ParkingLotCard extends StatelessWidget {
                       lot.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: lot.spacesAvailable == null
+                            ? colors.surfaceContainerHighest
+                            : lot.isAvailable
+                            ? colors.tertiary.withValues(alpha: 0.1)
+                            : colors.errorContainer,
+                        borderRadius: BorderRadius.circular(AppRadii.tag),
+                      ),
+                      child: Text(
+                        lot.spacesAvailable == null
+                            ? 'NOT REPORTED'
+                            : lot.isAvailable
+                            ? 'OPEN NOW'
+                            : 'FULL',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: lot.spacesAvailable == null
+                              ? colors.onSurfaceVariant
+                              : lot.isAvailable
+                              ? colors.tertiary
+                              : colors.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                    if (permitEligibility !=
+                        PermitEligibility.notConfigured) ...[
+                      const SizedBox(height: 6),
+                      _PermitStatus(eligibility: permitEligibility),
+                    ],
+                    const SizedBox(height: 8),
+                    ParkingLotTags(lot: lot),
+                    const SizedBox(height: 8),
                     Text(
                       lot.address,
                       maxLines: 1,
@@ -68,7 +124,7 @@ class ParkingLotCard extends StatelessWidget {
                       children: [
                         _LotFact(
                           icon: Icons.directions_walk_rounded,
-                          text: '${lot.distanceMiles.toStringAsFixed(1)} mi',
+                          text: lot.distanceLabel,
                         ),
                         _LotFact(
                           icon: Icons.local_offer_outlined,
@@ -76,8 +132,8 @@ class ParkingLotCard extends StatelessWidget {
                         ),
                         _LotFact(
                           icon: Icons.directions_car_filled_outlined,
-                          text: '${lot.spacesAvailable} spots',
-                          color: const Color(0xFF277A4A),
+                          text: lot.spacesLabel,
+                          color: colors.tertiary,
                         ),
                       ],
                     ),
@@ -101,6 +157,35 @@ class ParkingLotCard extends StatelessWidget {
   }
 }
 
+class _PermitStatus extends StatelessWidget {
+  const _PermitStatus({required this.eligibility});
+
+  final PermitEligibility eligibility;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isEligible = eligibility == PermitEligibility.eligible;
+    final color = isEligible ? colors.tertiary : colors.error;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isEligible ? Icons.verified_outlined : Icons.block_rounded,
+          size: 15,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          isEligible ? 'Works with your permit' : 'Permit not accepted',
+          style: Theme.of(context).textTheme.labelMedium
+              ?.copyWith(color: color, fontWeight: FontWeight.w800),
+        ),
+      ],
+    );
+  }
+}
+
 class _LotFact extends StatelessWidget {
   const _LotFact({required this.icon, required this.text, this.color});
 
@@ -117,10 +202,12 @@ class _LotFact extends StatelessWidget {
       children: [
         Icon(icon, size: 15, color: resolvedColor),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.labelMedium
-              ?.copyWith(color: resolvedColor, fontWeight: FontWeight.w600),
+        Flexible(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.labelMedium
+                ?.copyWith(color: resolvedColor),
+          ),
         ),
       ],
     );

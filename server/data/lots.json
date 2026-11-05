@@ -1,0 +1,370 @@
+[
+  {
+    "id": "union-square-garage",
+    "name": "Union Square Garage",
+    "address": "310 LSU Student Union",
+    "distanceMiles": 0.2,
+    "priceLabel": "$8 event rate",
+    "spacesAvailable": 42,
+    "isAccessible": true,
+    "permitTypes": [
+      "union-square-garage",
+      "employee-garage-c",
+      "visitor"
+    ],
+    "gameDay": true,
+    "description": "Covered parking near the Student Union with convenient campus access.",
+    "hours": "Open daily, 6:00 AMâ€“11:00 PM",
+    "eventRestrictions": "Event pricing and entry restrictions may apply on game days.",
+    "amenities": [
+      "Covered parking",
+      "Accessible spaces",
+      "Well lit"
+    ],
+    "latitude": 30.413082,
+    "longitude": -91.174782
+  },
+  {
+    "id": "west-stadium-lot",
+    "name": "West Stadium Lot",
+    "address": "North Stadium Road",
+    "distanceMiles": 0.4,
+    "priceLabel": "$12 event rate",
+    "spacesAvailable": 18,
+    "isAccessible": true,
+    "permitTypes": [
+      "visitor",
+      "event"
+    ],
+    "gameDay": true,
+    "description": "Surface parking within walking distance of Tiger Stadium.",
+    "hours": "Hours vary by campus event",
+    "eventRestrictions": "A valid event permit may be required before kickoff.",
+    "amenities": [
+      "Accessible spaces",
+      "Event shuttle nearby"
+    ],
+    "latitude": 30.411709,
+    "longitude": -91.185799
+  },
+  {
+    "id": "nicholson-gateway",
+    "name": "Nicholson Gateway",
+    "address": "Nicholson Drive at Skip Bertman Drive",
+    "distanceMiles": 0.8,
+    "priceLabel": "Free after 5 PM",
+    "spacesAvailable": 67,
+    "isAccessible": false,
+    "permitTypes": [
+      "nicholson-gateway-resident"
+    ],
+    "gameDay": false,
+    "description": "Parking near Nicholson Gateway with access to campus transit routes.",
+    "hours": "Open daily; posted restrictions apply",
+    "amenities": [
+      "Campus transit nearby"
+    ],
+    "latitude": 30.413839,
+    "longitude": -91.188286
+  },
+  {
+    "id": "welcome-center",
+    "name": "Visitor Parking (Welcome Center)",
+    "address": "Visitor parking · LSU campus",
+    "priceLabel": "Pay to park",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "visitor"
+    ],
+    "description": "Visitor Parking (Welcome Center) is listed by LSU as Visitor parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.416122,
+    "longitude": -91.176949,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/344811",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.23374063888260285,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "south-stadium-visitor",
+    "name": "South Stadium Visitor Parking",
+    "address": "Visitor parking · LSU campus",
+    "priceLabel": "Pay to park",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "visitor"
+    ],
+    "description": "South Stadium Visitor Parking is listed by LSU as Visitor parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.410709,
+    "longitude": -91.18483,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/344813",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.47593873225660255,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "thomas-boyd-visitor",
+    "name": "Thomas Boyd Visitor Parking Lot (Tower Drive North \"B\")",
+    "address": "Visitor parking · LSU campus",
+    "priceLabel": "Pay to park",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "visitor"
+    ],
+    "description": "Thomas Boyd Visitor Parking Lot (Tower Drive North \"B\") is listed by LSU as Visitor parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.415457,
+    "longitude": -91.178558,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/344814",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.204044738655158,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "touchdown-village-visitor",
+    "name": "Touchdown Village Visitor Parking",
+    "address": "Visitor parking · LSU campus",
+    "priceLabel": "Pay to park",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "visitor"
+    ],
+    "description": "Touchdown Village Visitor Parking is listed by LSU as Visitor parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.406424,
+    "longitude": -91.179893,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/355166",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.46535674943169036,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "parker-coliseum-visitor",
+    "name": "Parker Coliseum Visitor Parking",
+    "address": "Visitor parking · LSU campus",
+    "priceLabel": "Pay to park",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "visitor"
+    ],
+    "description": "Parker Coliseum Visitor Parking is listed by LSU as Visitor parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.408609,
+    "longitude": -91.175301,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/355167",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.3074255744431575,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "south-quad-west-403",
+    "name": "South Quad West Lot (403)",
+    "address": "Commuter (Zone 1) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "commuter"
+    ],
+    "description": "South Quad West Lot (403) is listed by LSU as Commuter (Zone 1) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.407219,
+    "longitude": -91.184097,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/359712",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.5610176714508593,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "skip-bertman-east-404",
+    "name": "Skip Bertman Drive East Lot (404)",
+    "address": "Commuter (Zone 1) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "commuter"
+    ],
+    "description": "Skip Bertman Drive East Lot (404) is listed by LSU as Commuter (Zone 1) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.410667,
+    "longitude": -91.187241,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/359713",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.6153197186446877,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "bernie-moore-104",
+    "name": "Bernie Moore Lot (104)",
+    "address": "Commuter (Zone 1) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "commuter"
+    ],
+    "description": "Bernie Moore Lot (104) is listed by LSU as Commuter (Zone 1) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.414856,
+    "longitude": -91.186844,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/359721",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.5928540116359774,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "natatorium-105",
+    "name": "Natatorium Lot (105)",
+    "address": "Commuter (Zone 1) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "commuter"
+    ],
+    "description": "Natatorium Lot (105) is listed by LSU as Commuter (Zone 1) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.41674,
+    "longitude": -91.186287,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/359723",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.6077234189195996,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "south-law",
+    "name": "South Law Lot",
+    "address": "Law (Zone 4) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "law-school"
+    ],
+    "description": "South Law Lot is listed by LSU as Law (Zone 4) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.414021,
+    "longitude": -91.174149,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/352663",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.20201809572642526,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "fraternity-lane-east-500b",
+    "name": "Fraternity Lane East (Lot 500b)",
+    "address": "Greek Residential (Zone 2) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "greek-resident"
+    ],
+    "description": "Fraternity Lane East (Lot 500b) is listed by LSU as Greek Residential (Zone 2) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.416323,
+    "longitude": -91.173615,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/352538",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.32667141406623995,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "greek-row-north",
+    "name": "Greek Row North Lot",
+    "address": "Greek Residential (Zone 2) parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "greek-resident"
+    ],
+    "description": "Greek Row North Lot is listed by LSU as Greek Residential (Zone 2) parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.412107,
+    "longitude": -91.168114,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/352642",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.5432048828738678,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "park-geaux-tiger-park-east",
+    "name": "Park & Geaux Lot (Tiger Park East)",
+    "address": "Park & Geaux parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "park-and-geaux"
+    ],
+    "description": "Park & Geaux Lot (Tiger Park East) is listed by LSU as Park & Geaux parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.411627,
+    "longitude": -91.19236,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/1077259",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.9066440725302176,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "skip-bertman-west-412",
+    "name": "Skip Bertman West (Lot 412)",
+    "address": "Park & Geaux parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "park-and-geaux"
+    ],
+    "description": "Skip Bertman West (Lot 412) is listed by LSU as Park & Geaux parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.411648452426064,
+    "longitude": -91.19507100384456,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/1077260",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 1.06757909104227,
+    "distanceReference": "Union"
+  },
+  {
+    "id": "urec-north",
+    "name": "UREC North Lot",
+    "address": "Park & Geaux parking · LSU campus",
+    "priceLabel": "Permit required",
+    "spacesAvailable": null,
+    "isAccessible": null,
+    "permitTypes": [
+      "park-and-geaux"
+    ],
+    "description": "UREC North Lot is listed by LSU as Park & Geaux parking.",
+    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
+    "amenities": [],
+    "latitude": 30.412642,
+    "longitude": -91.169716,
+    "sourceUrl": "https://map.concept3d.com/?id=743#!m/1077355",
+    "sourceVerifiedAt": "2026-11-03",
+    "distanceMiles": 0.44600589892136805,
+    "distanceReference": "Union"
+  }
+]
