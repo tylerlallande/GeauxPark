@@ -99,12 +99,40 @@ flutter run -d macos -t lib/main.dart
 
 ### Preview on a phone over local Wi-Fi
 
-Start the Flutter web server on the Mac:
+Connect the Mac and phone to the same Wi-Fi network, then run:
+
+```bash
+./tool/run_lan_demo.sh
+```
+
+The launcher prints the exact URL to open on the phone and serves an optimized
+release build on port `8081` by default. Keep the terminal open while using the
+demo, and press Ctrl+C to stop it. To choose another port, pass it as the first
+argument:
+
+```bash
+./tool/run_lan_demo.sh 9000
+```
+
+For development with hot reload, use debug mode. Debug builds are expected to
+feel slower and should not be used to judge phone-demo performance:
+
+```bash
+./tool/run_lan_demo.sh --debug
+```
+
+If macOS asks whether to allow incoming connections, allow them for
+Flutter/Dart. A VPN, guest Wi-Fi client isolation, or the macOS firewall can
+prevent the phone from reaching the Mac even when both devices show the same
+network name.
+
+To launch the demo manually instead, run:
 
 ```bash
 flutter run -d web-server \
+  --release \
   --web-hostname 0.0.0.0 \
-  --web-port 8080 \
+  --web-port 8081 \
   -t lib/main.dart
 ```
 
@@ -115,9 +143,11 @@ ipconfig getifaddr en0
 ```
 
 With the phone connected to the same Wi-Fi network, open
-`http://<mac-ip-address>:8080` in its browser. Keep the terminal running while
-using the preview. If macOS asks whether to allow incoming connections, allow
-them for Flutter/Dart.
+`http://<mac-ip-address>:8081` in its browser. The app, local sample parking
+data, map, filters, permit preferences, saved lots, and details are available
+in this demo. Mobile browsers can restrict precise location on plain HTTP LAN
+addresses; if that happens, location-dependent directions show the app's retry
+state while the remaining workflow stays available.
 
 ## Future Improvements
 

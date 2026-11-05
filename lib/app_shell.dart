@@ -30,6 +30,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+  final PageController _pageController = PageController();
   static const _savedLotsKey = 'saved_parking_lot_ids';
   static const _parkingPermitsKey = 'selected_parking_permit_ids';
   SharedPreferences? _preferences;
@@ -40,6 +41,9 @@ class _AppShellState extends State<AppShell> {
   bool _loadFailed = false;
   String? _mapDirectionsLotId;
   LatLng? _mapDirectionsOrigin;
+  int? _swipePointer;
+  Offset? _swipeStartPosition;
+  DateTime? _swipeStartTime;
 
   @override
   void initState() {
@@ -150,8 +154,62 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       _mapDirectionsLotId = request.$1.lotId;
       _mapDirectionsOrigin = request.$2;
-      _selectedIndex = 1;
     });
+    _selectTab(1);
+  }
+
+  void _selectTab(int index) {
+    if (index == _selectedIndex) return;
+    if (!_pageController.hasClients) {
+      setState(() => _selectedIndex = index);
+      return;
+    }
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _startSwipe(PointerDownEvent event) {
+    _swipePointer = event.pointer;
+    _swipeStartPosition = event.position;
+    _swipeStartTime = DateTime.now();
+  }
+
+  void _finishSwipe(PointerUpEvent event) {
+    if (_swipePointer != event.pointer ||
+        _swipeStartPosition == null ||
+        _swipeStartTime == null) {
+      _resetSwipe();
+      return;
+    }
+    final delta = event.position - _swipeStartPosition!;
+    final elapsed = DateTime.now().difference(_swipeStartTime!);
+    _resetSwipe();
+
+    final isDeliberateHorizontalSwipe =
+        delta.dx.abs() >= 140 &&
+        delta.dx.abs() > delta.dy.abs() * 1.5 &&
+        elapsed <= const Duration(milliseconds: 700);
+    if (!isDeliberateHorizontalSwipe) return;
+
+    final nextIndex = delta.dx < 0
+        ? (_selectedIndex + 1).clamp(0, _destinations.length - 1)
+        : (_selectedIndex - 1).clamp(0, _destinations.length - 1);
+    _selectTab(nextIndex);
+  }
+
+  void _resetSwipe() {
+    _swipePointer = null;
+    _swipeStartPosition = null;
+    _swipeStartTime = null;
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   void _openGameDay() {
@@ -198,7 +256,7 @@ class _AppShellState extends State<AppShell> {
         onLotSelected: _openParkingDetails,
         onGameDaySelected: _openGameDay,
         selectedPermits: _selectedPermits,
-        onManagePermits: () => setState(() => _selectedIndex = 3),
+        onManagePermits: () => _selectTab(3),
       ),
       ParkingMapScreen(
         savedLotIds: _savedLotIds,
@@ -213,7 +271,7 @@ class _AppShellState extends State<AppShell> {
         loadFailed: _loadFailed,
         onRetry: _loadSavedLots,
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
-        onBrowseParking: () => setState(() => _selectedIndex = 0),
+        onBrowseParking: () => _selectTab(0),
         onLotSelected: _openParkingDetails,
         selectedPermits: _selectedPermits,
       ),
@@ -226,15 +284,53 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       body: SafeArea(
-        child: IndexedStack(index: _selectedIndex, children: screens),
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _startSwipe,
+          onPointerUp: _finishSwipe,
+          onPointerCancel: (_) => _resetSwipe(),
+          child: PageView.builder(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: screens.length,
+            onPageChanged: (index) => setState(() => _selectedIndex = index),
+            itemBuilder: (context, index) => _KeepAliveTab(
+              active: index == _selectedIndex,
+              child: screens[index],
+            ),
+          ),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         destinations: _destinations,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        onDestinationSelected: _selectTab,
       ),
+    );
+  }
+}
+
+class _KeepAliveTab extends StatefulWidget {
+  const _KeepAliveTab({required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  @override
+  State<_KeepAliveTab> createState() => _KeepAliveTabState();
+}
+
+class _KeepAliveTabState extends State<_KeepAliveTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return TickerMode(
+      enabled: widget.active,
+      child: RepaintBoundary(child: widget.child),
     );
   }
 }
