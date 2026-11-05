@@ -1,5 +1,5 @@
 # GeauxPark
-[![Build](https://github.com/tylerlallande/GeauxPark/actions/workflows/build.yml/badge.svg)](https://github.com/tylerlallande/GeauxPark/actions/workflows/build.yml)
+[![Android CI](https://github.com/tylerlallande/GeauxPark/actions/workflows/main.yml/badge.svg)](https://github.com/tylerlallande/GeauxPark/actions/workflows/main.yml)
 
 **Task Board:** https://github.com/users/BrandonAvila76/projects/1 (milestones: MVP Nov 6, Final Nov 20)
 

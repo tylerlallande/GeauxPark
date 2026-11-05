@@ -3,12 +3,51 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/main.dart';
 import 'package:geauxpark/models/parking_details.dart';
 import 'package:geauxpark/models/parking_lot.dart';
+import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/repositories/parking_repository.dart';
 import 'package:geauxpark/screens/parking_details_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('official map lots can be searched, saved, and opened', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(SearchBar), 'Bernie Moore');
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byTooltip('Save Bernie Moore Lot (104)'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('NOT REPORTED'), findsOneWidget);
+    expect(find.text('FULL'), findsNothing);
+    await tester.tap(find.byTooltip('Save Bernie Moore Lot (104)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saved'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bernie Moore Lot (104)'), findsOneWidget);
+    await tester.tap(find.text('Bernie Moore Lot (104)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Not reported'), findsOneWidget);
+    expect(find.text('Currently full'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text(
+        'Bernie Moore Lot (104) is listed by LSU as Commuter (Zone 1) parking.',
+      ),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.text(
+        'Bernie Moore Lot (104) is listed by LSU as Commuter (Zone 1) parking.',
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('saved parking persists after restart and can be removed', (
     tester,
@@ -20,6 +59,11 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(
+      tester.element(find.byTooltip('Save Union Square Garage')),
+      alignment: 0.3,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Save Union Square Garage'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Unsave Union Square Garage'), findsOneWidget);
@@ -48,17 +92,36 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const GeauxParkApp());
+    final homeScroll = find
+        .byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.axisDirection == AxisDirection.down,
+        )
+        .first;
 
     expect(find.text('GeauxPark'), findsOneWidget);
     expect(find.text('Find your parking'), findsOneWidget);
     expect(find.text('Quick filters'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Game-day parking'),
+      200,
+      scrollable: homeScroll,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Game-day parking'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Parking near LSU'),
+      200,
+      scrollable: homeScroll,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Parking near LSU'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Union Square Garage'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: homeScroll,
     );
     expect(find.text('Union Square Garage'), findsOneWidget);
   });
@@ -77,6 +140,48 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Parking map'), findsOneWidget);
+  });
+
+  testWidgets('permit selection persists and filters eligible lots', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your parking'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('permit-nicholson-gateway-resident')),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('permit-nicholson-gateway-resident')),
+    );
+    await tester.pumpAndSettle();
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getStringList('selected_parking_permit_ids'),
+      contains('nicholson-gateway-resident'),
+    );
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('My permits'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Nicholson Gateway'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Nicholson Gateway'), findsOneWidget);
+    expect(find.text('Union Square Garage'), findsNothing);
   });
 
   testWidgets('parking search filters the visible results', (
@@ -118,6 +223,51 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Covered parking'), findsOneWidget);
+  });
+
+  testWidgets('game-day banner opens the game-day plan', (tester) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Game-day parking'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Game-day parking'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Game day'), findsOneWidget);
+    expect(find.text('Saturday home game'), findsOneWidget);
+    expect(find.text('Parking status'), findsOneWidget);
+    expect(find.text('FILLING FAST'), findsOneWidget);
+    expect(find.text('PERMIT ONLY'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Before you go'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Game-day timeline'), findsOneWidget);
+    expect(find.text('Before you go'), findsOneWidget);
+  });
+
+  testWidgets('game-day lot opens parking details', (tester) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Game-day parking'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Game-day parking'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('West Stadium Lot'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Parking details'), findsOneWidget);
+    expect(find.text('West Stadium Lot'), findsOneWidget);
   });
 
   testWidgets('details skeleton handles unavailable server data', (
@@ -174,6 +324,7 @@ const _testLot = ParkingLot(
   priceLabel: 'Price unavailable',
   spacesAvailable: 0,
   isAccessible: false,
+  permitTypes: {ParkingPermit.visitor},
 );
 
 class _FakeParkingRepository implements ParkingRepository {

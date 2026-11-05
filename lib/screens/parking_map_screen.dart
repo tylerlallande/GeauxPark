@@ -44,6 +44,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   bool _isLocating = false;
   bool _isTrackingLocation = false;
   bool _isGettingDirections = false;
+  bool _isDirectionsOpen = false;
   bool _showRoute = false;
   RoadRoute? _roadRoute;
   String? _routeError;
@@ -334,9 +335,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             width: double.infinity,
             child: FilledButton.icon(
               key: const ValueKey('map-get-directions'),
-              onPressed: _isGettingDirections || _isLocating
+              onPressed:
+                  _isGettingDirections || _isDirectionsOpen || _isLocating
                   ? null
-                  : _getDirections,
+                  : _openExternalDirections,
               icon: _isGettingDirections
                   ? const SizedBox.square(
                       dimension: 18,
@@ -346,9 +348,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               label: Text(
                 _isGettingDirections
                     ? 'Getting your location…'
-                    : _roadRoute == null
-                    ? 'Get directions'
-                    : 'Refresh directions',
+                    : 'Get directions',
               ),
             ),
           ),
@@ -361,6 +361,52 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final camera = _mapController.camera;
     final zoom = (camera.zoom + amount).clamp(12.0, 18.0);
     _mapController.move(camera.center, zoom);
+  }
+
+  Future<void> _openExternalDirections() async {
+    if (_isGettingDirections || _isDirectionsOpen || _isLocating) return;
+    final lot = _selectedLot;
+    final destination = _lotLocations[lot.id];
+    if (destination == null) {
+      _showLocationMessage('Directions are unavailable for this lot.');
+      return;
+    }
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    setState(() => _isGettingDirections = true);
+    try {
+      final origin = await widget.directionsService.currentLocation();
+      if (!mounted) return;
+      setState(() {
+        _userLocation = origin;
+        _isGettingDirections = false;
+        _isDirectionsOpen = true;
+      });
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (context) => _DirectionsSheet(
+          lot: lot,
+          origin: origin,
+          destination: destination,
+          service: widget.directionsService,
+        ),
+      );
+    } on DirectionsException catch (error) {
+      _showDirectionsError(error.message);
+    } catch (_) {
+      _showDirectionsError(
+        'Could not get your location. Check location access and try again.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingDirections = false;
+          _isDirectionsOpen = false;
+        });
+      }
+    }
   }
 
   Future<void> _getDirections() async {
@@ -501,6 +547,109 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   void dispose() {
     _positionSubscription?.cancel();
     super.dispose();
+  }
+}
+
+class _DirectionsSheet extends StatefulWidget {
+  const _DirectionsSheet({
+    required this.lot,
+    required this.origin,
+    required this.destination,
+    required this.service,
+  });
+
+  final ParkingLot lot;
+  final LatLng origin;
+  final LatLng destination;
+  final DirectionsService service;
+
+  @override
+  State<_DirectionsSheet> createState() => _DirectionsSheetState();
+}
+
+class _DirectionsSheetState extends State<_DirectionsSheet> {
+  bool _opening = false;
+  String? _error;
+
+  Future<void> _open(DirectionsMode mode) async {
+    if (_opening) return;
+    setState(() {
+      _opening = true;
+      _error = null;
+    });
+    try {
+      final opened = await widget.service.openDirections(
+        origin: widget.origin,
+        destination: widget.destination,
+        mode: mode,
+      );
+      if (!mounted) return;
+      if (opened) {
+        Navigator.of(context).pop();
+      } else {
+        setState(() => _error = 'Could not open Google Maps. Please try again.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not open Google Maps. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Directions to ${widget.lot.name}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text('From your current location · Opens Google Maps'),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.icon(
+                  key: const ValueKey('directions-driving'),
+                  onPressed: _opening ? null : () => _open(DirectionsMode.driving),
+                  icon: const Icon(Icons.directions_car_rounded),
+                  label: const Text('Drive'),
+                ),
+                OutlinedButton.icon(
+                  key: const ValueKey('directions-walking'),
+                  onPressed: _opening ? null : () => _open(DirectionsMode.walking),
+                  icon: const Icon(Icons.directions_walk_rounded),
+                  label: const Text('Walk'),
+                ),
+              ],
+            ),
+            if (_opening) ...[
+              const SizedBox(height: 12),
+              const Text('Opening Google Maps…'),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
