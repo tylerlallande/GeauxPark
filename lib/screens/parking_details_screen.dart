@@ -146,9 +146,10 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
         );
       }
     } on DirectionsException catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } finally {
       if (mounted) setState(() => _isOpeningDirections = false);
     }

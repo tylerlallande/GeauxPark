@@ -138,6 +138,6 @@ String formatRouteDuration(double seconds) {
   final hours = minutes ~/ 60;
   final remainingMinutes = minutes % 60;
   return remainingMinutes == 0
-      ? '${hours} hr'
-      : '${hours} hr $remainingMinutes min';
+      ? '$hours hr'
+      : '$hours hr $remainingMinutes min';
 }
