@@ -48,7 +48,13 @@ jobs:
         run: flutter test --coverage
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # Version tags (v1.2.3) set the app's version name to match the tag.
+            flutter build apk --release --build-name "${GITHUB_REF_NAME#v}"
+          else
+            flutter build apk --release
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -57,3 +63,31 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    # Runs only for version tags such as v1.0.0, after the build job passes.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the APK built for this tag
+        uses: actions/download-artifact@v4
+        with:
+          name: geauxpark-apk-${{ github.sha }}
+
+      - name: Create the release and attach the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          mv app-release.apk "GeauxPark-${TAG}.apk"
+          gh release create "$TAG" "GeauxPark-${TAG}.apk" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "GeauxPark ${TAG}" \
+            --generate-notes \
+            --verify-tag
