@@ -52,9 +52,6 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     super.initState();
     _isSaved = widget.initiallySaved;
     _loadDetails();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _getCurrentLocation();
-    });
   }
 
   void _loadDetails() {

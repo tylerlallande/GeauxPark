@@ -72,6 +72,11 @@ class _FakeLocationPlatform extends GeolocatorPlatform {
   }
 }
 
+Future<void> pumpMap(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
 void main() {
   test(
     'fresh location requests permission and high accuracy with a timeout',
@@ -139,7 +144,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpMap(tester);
   }
 
   testWidgets(
@@ -154,14 +159,14 @@ void main() {
           .markers
           .singleWhere((marker) => marker.key == markerKey);
       map.mapController!.move(marker.point, 18);
-      await tester.pumpAndSettle();
+      await pumpMap(tester);
       await tester.tap(find.byKey(markerKey));
-      await tester.pumpAndSettle();
+      await pumpMap(tester);
       await tester.tap(find.byKey(const ValueKey('map-get-directions')));
-      await tester.pumpAndSettle();
+      await pumpMap(tester);
       expect(find.text('Directions to Bernie Moore Lot (104)'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('directions-walking')));
-      await tester.pumpAndSettle();
+      await pumpMap(tester);
       final location = parkingLocations['bernie-moore-104']!;
       expect(
         service.openedUri?.queryParameters['destination'],
@@ -172,9 +177,9 @@ void main() {
       // Requesting again uses a new reading rather than the cached blue dot.
       service.origin = const LatLng(30.43, -91.19);
       await tester.tap(find.byKey(const ValueKey('map-get-directions')));
-      await tester.pumpAndSettle();
+      await pumpMap(tester);
       await tester.tap(find.byKey(const ValueKey('directions-driving')));
-      await tester.pumpAndSettle();
+      await pumpMap(tester);
       expect(service.reads, 2);
       expect(service.openedUri?.queryParameters['origin'], '30.43,-91.19');
       expect(service.openedUri?.queryParameters['travelmode'], 'driving');
@@ -190,7 +195,7 @@ void main() {
       );
     await showMap(tester, service);
     await tester.tap(find.byKey(const ValueKey('map-get-directions')));
-    await tester.pumpAndSettle();
+    await pumpMap(tester);
     expect(
       find.textContaining('Location permission was denied.'),
       findsOneWidget,
@@ -198,7 +203,7 @@ void main() {
     expect(service.openedUri, isNull);
     service.locationError = null;
     await tester.tap(find.text('Retry'));
-    await tester.pumpAndSettle();
+    await pumpMap(tester);
     expect(find.byKey(const ValueKey('directions-driving')), findsOneWidget);
   });
 
@@ -208,16 +213,16 @@ void main() {
     final service = _FakeDirections()..opens = false;
     await showMap(tester, service);
     await tester.tap(find.byKey(const ValueKey('map-get-directions')));
-    await tester.pumpAndSettle();
+    await pumpMap(tester);
     await tester.tap(find.byKey(const ValueKey('directions-driving')));
-    await tester.pumpAndSettle();
+    await pumpMap(tester);
     expect(
       find.text('Could not open Google Maps. Please try again.'),
       findsOneWidget,
     );
     service.opens = true;
     await tester.tap(find.byKey(const ValueKey('directions-driving')));
-    await tester.pumpAndSettle();
+    await pumpMap(tester);
     expect(find.byKey(const ValueKey('directions-driving')), findsNothing);
   });
 }

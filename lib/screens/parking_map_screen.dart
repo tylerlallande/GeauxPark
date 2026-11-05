@@ -394,10 +394,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         ),
       );
     } on DirectionsException catch (error) {
-      _showDirectionsError(error.message);
+      _showDirectionsError(error.message, onRetry: _openExternalDirections);
     } catch (_) {
       _showDirectionsError(
         'Could not get your location. Check location access and try again.',
+        onRetry: _openExternalDirections,
       );
     } finally {
       if (mounted) {
@@ -477,12 +478,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     }
   }
 
-  void _showDirectionsError(String message) {
+  void _showDirectionsError(String message, {VoidCallback? onRetry}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        action: SnackBarAction(label: 'Retry', onPressed: _getDirections),
+        action: SnackBarAction(
+          label: 'Retry',
+          onPressed: onRetry ?? _getDirections,
+        ),
       ),
     );
   }
