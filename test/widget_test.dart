@@ -8,6 +8,11 @@ import 'package:geauxpark/repositories/parking_repository.dart';
 import 'package:geauxpark/screens/parking_details_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Finder verticalScrollable() => find.byWidgetPredicate(
+  (widget) =>
+      widget is Scrollable && widget.axisDirection == AxisDirection.down,
+);
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
@@ -21,7 +26,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byTooltip('Save Bernie Moore Lot (104)'),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     expect(find.text('NOT REPORTED'), findsOneWidget);
     expect(find.text('FULL'), findsNothing);
@@ -39,7 +44,7 @@ void main() {
         'Bernie Moore Lot (104) is listed by LSU as Commuter (Zone 1) parking.',
       ),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     expect(
       find.text(
@@ -57,7 +62,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byTooltip('Save Union Square Garage'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     await Scrollable.ensureVisible(
       tester.element(find.byTooltip('Save Union Square Garage')),
@@ -142,6 +147,34 @@ void main() {
     expect(find.text('Parking map'), findsOneWidget);
   });
 
+  testWidgets('horizontal swipes move between bottom navigation tabs', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+
+    final pages = find.byType(PageView);
+    expect(pages, findsOneWidget);
+    expect(find.text('Find your parking'), findsOneWidget);
+
+    await tester.drag(pages, const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Parking map'), findsOneWidget);
+
+    await tester.drag(pages, const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved parking'), findsOneWidget);
+
+    await tester.drag(pages, const Offset(500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Parking map'), findsOneWidget);
+  });
+
   testWidgets('permit selection persists and filters eligible lots', (
     tester,
   ) async {
@@ -158,7 +191,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('permit-nicholson-gateway-resident')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     await tester.tap(
       find.byKey(const ValueKey('permit-nicholson-gateway-resident')),
@@ -178,7 +211,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Nicholson Gateway'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     expect(find.text('Nicholson Gateway'), findsOneWidget);
     expect(find.text('Union Square Garage'), findsNothing);
@@ -195,7 +228,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Nicholson Gateway'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
 
     expect(find.text('Nicholson Gateway'), findsOneWidget);
@@ -208,7 +241,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Union Square Garage'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
 
     await tester.tap(find.text('Union Square Garage'));
@@ -220,7 +253,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Covered parking'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     expect(find.text('Covered parking'), findsOneWidget);
   });
@@ -232,7 +265,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Game-day parking'),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     await tester.tap(find.text('Game-day parking'));
     await tester.pumpAndSettle();
@@ -246,7 +279,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Before you go'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     expect(find.text('Game-day timeline'), findsOneWidget);
     expect(find.text('Before you go'), findsOneWidget);
@@ -258,7 +291,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Game-day parking'),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     await tester.tap(find.text('Game-day parking'));
     await tester.pumpAndSettle();
@@ -288,7 +321,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.textContaining('when a parking data provider is connected'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: verticalScrollable().first,
     );
     expect(
       find.textContaining('when a parking data provider is connected'),
