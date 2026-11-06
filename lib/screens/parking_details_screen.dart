@@ -6,10 +6,12 @@ import '../widgets/parking_lot_tags.dart';
 import '../models/parking_details.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
+import '../models/parking_availability.dart';
 import '../repositories/parking_repository.dart';
 import '../services/directions_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/road_routing_consent.dart';
+import '../widgets/availability_indicator.dart';
 
 typedef ParkingSaveCallback = Future<bool> Function(ParkingLot lot);
 
@@ -23,6 +25,8 @@ class ParkingDetailsScreen extends StatefulWidget {
     this.onDirectionsRequested,
     this.onOpenMapDirections,
     this.selectedPermits = const {},
+    this.occupancyReport,
+    this.onReportAvailability,
   });
 
   final ParkingLot lot;
@@ -32,6 +36,9 @@ class ParkingDetailsScreen extends StatefulWidget {
   final ValueChanged<ParkingDetails>? onDirectionsRequested;
   final ValueChanged<(ParkingDetails, LatLng)>? onOpenMapDirections;
   final Set<ParkingPermit> selectedPermits;
+  final OccupancyReport? occupancyReport;
+  final Future<bool> Function(ParkingLot lot, ParkingAvailabilityStatus status)?
+  onReportAvailability;
 
   @override
   State<ParkingDetailsScreen> createState() => _ParkingDetailsScreenState();
@@ -46,12 +53,23 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
   bool _isLocating = false;
   bool _isOpeningDirections = false;
   String? _locationMessage;
+  OccupancyReport? _occupancyReport;
+  bool _isReportingAvailability = false;
 
   @override
   void initState() {
     super.initState();
     _isSaved = widget.initiallySaved;
+    _occupancyReport = widget.occupancyReport;
     _loadDetails();
+  }
+
+  @override
+  void didUpdateWidget(covariant ParkingDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.occupancyReport != oldWidget.occupancyReport) {
+      _occupancyReport = widget.occupancyReport;
+    }
   }
 
   void _loadDetails() {
@@ -164,6 +182,30 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     });
   }
 
+  Future<void> _reportAvailability() async {
+    final callback = widget.onReportAvailability;
+    if (callback == null || _isReportingAvailability) return;
+    final status = await showAvailabilityReportSheet(
+      context,
+      lotName: widget.lot.name,
+      currentStatus: _occupancyReport?.status,
+    );
+    if (!mounted || status == null) return;
+    setState(() => _isReportingAvailability = true);
+    final succeeded = await callback(widget.lot, status);
+    if (!mounted) return;
+    setState(() {
+      if (succeeded) {
+        _occupancyReport = OccupancyReport(
+          lotId: widget.lot.id,
+          status: status,
+          reportedAt: DateTime.now(),
+        );
+      }
+      _isReportingAvailability = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -209,6 +251,11 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
             isOpeningDirections: _isOpeningDirections,
             locationMessage: _locationMessage,
             onRequestLocation: _getCurrentLocation,
+            occupancyReport: _occupancyReport,
+            isReportingAvailability: _isReportingAvailability,
+            onReportAvailability: widget.onReportAvailability == null
+                ? null
+                : _reportAvailability,
           );
         },
       ),
@@ -227,6 +274,9 @@ class _DetailsContent extends StatelessWidget {
     required this.isOpeningDirections,
     required this.locationMessage,
     required this.onRequestLocation,
+    required this.occupancyReport,
+    required this.isReportingAvailability,
+    required this.onReportAvailability,
   });
 
   final ParkingLot lot;
@@ -238,11 +288,15 @@ class _DetailsContent extends StatelessWidget {
   final bool isOpeningDirections;
   final String? locationMessage;
   final Future<LatLng?> Function() onRequestLocation;
+  final OccupancyReport? occupancyReport;
+  final bool isReportingAvailability;
+  final VoidCallback? onReportAvailability;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final isAvailable = lot.isAvailable;
+    final availabilityStatus =
+        occupancyReport?.status ?? lot.availabilityStatus;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
@@ -269,14 +323,7 @@ class _DetailsContent extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  _AvailabilityBadge(
-                    label: lot.spacesAvailable == null
-                        ? 'Not reported'
-                        : isAvailable
-                        ? 'Available now'
-                        : 'Currently full',
-                    isAvailable: isAvailable,
-                  ),
+                  AvailabilityIndicator(status: availabilityStatus),
                 ],
               ),
               const SizedBox(height: 22),
@@ -331,22 +378,25 @@ class _DetailsContent extends StatelessWidget {
               child: _SummaryCard(
                 icon: Icons.directions_car_filled_outlined,
                 label: 'Available',
-                value: lot.spacesAvailable?.toString() ?? 'Unknown',
+                value:
+                    occupancyReport?.status.label ??
+                    lot.spacesAvailable?.toString() ??
+                    'Unknown',
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Semantics(
-          label: lot.spacesAvailable == null
+          label: availabilityStatus == ParkingAvailabilityStatus.unknown
               ? 'Parking availability is not reported'
-              : isAvailable
-              ? '${lot.spacesAvailable} parking spaces available'
-              : 'No parking spaces currently available',
+              : 'Parking availability reported as ${availabilityStatus.label}',
           child: Text(
-            lot.spacesAvailable == null
+            occupancyReport != null
+                ? '${formatReportAge(occupancyReport!.reportedAt, DateTime.now())}. Community reports can change quickly.'
+                : lot.spacesAvailable == null
                 ? 'Live availability is not provided for this lot.'
-                : isAvailable
+                : lot.isAvailable
                 ? 'Availability can change quickly on event days.'
                 : 'Check back soon or explore another nearby lot.',
             style: Theme.of(context).textTheme.bodySmall
@@ -370,6 +420,20 @@ class _DetailsContent extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 22),
+        OutlinedButton.icon(
+          key: const ValueKey('details-report-availability'),
+          onPressed: isReportingAvailability ? null : onReportAvailability,
+          icon: isReportingAvailability
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.campaign_outlined),
+          label: Text(
+            isReportingAvailability ? 'Saving report…' : 'Report availability',
+          ),
+        ),
+        const SizedBox(height: 12),
         _PermitAccessCard(lot: lot, selectedPermits: selectedPermits),
         const SizedBox(height: 12),
         ParkingLotTags(lot: lot),
@@ -533,48 +597,6 @@ class _SummaryCard extends StatelessWidget {
             Text(label, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AvailabilityBadge extends StatelessWidget {
-  const _AvailabilityBadge({required this.label, required this.isAvailable});
-
-  final String label;
-  final bool isAvailable;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: isAvailable
-            ? colors.tertiary.withValues(alpha: 0.22)
-            : colors.onPrimary.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isAvailable
-              ? colors.tertiary.withValues(alpha: 0.55)
-              : colors.onPrimary.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isAvailable ? Icons.check_circle_rounded : Icons.info_rounded,
-            size: 16,
-            color: isAvailable ? colors.onPrimary : colors.secondary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium
-                ?.copyWith(color: colors.onPrimary),
-          ),
-        ],
       ),
     );
   }

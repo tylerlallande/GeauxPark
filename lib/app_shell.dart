@@ -7,7 +7,9 @@ import 'data/sample_parking_lots.dart';
 import 'models/parking_lot.dart';
 import 'models/parking_details.dart';
 import 'models/parking_permit.dart';
+import 'models/parking_availability.dart';
 import 'repositories/demo_parking_repository.dart';
+import 'repositories/local_occupancy_report_repository.dart';
 import 'repositories/parking_repository.dart';
 import 'screens/game_day_screen.dart';
 import 'screens/home_screen.dart';
@@ -36,8 +38,10 @@ class _AppShellState extends State<AppShell> {
   SharedPreferences? _preferences;
   Set<String> _savedLotIds = {};
   Set<ParkingPermit> _selectedPermits = {};
+  Map<String, OccupancyReport> _occupancyReports = {};
   bool _saving = false;
   bool _savingPermits = false;
+  final Set<String> _savingReportLotIds = {};
   bool _loadFailed = false;
   String? _mapDirectionsLotId;
   LatLng? _mapDirectionsOrigin;
@@ -60,11 +64,14 @@ class _AppShellState extends State<AppShell> {
           .map(parkingPermitFromId)
           .whereType<ParkingPermit>()
           .toSet();
+      final reports = await LocalOccupancyReportRepository(preferences)
+          .loadReports();
       if (!mounted) return;
       setState(() {
         _preferences = preferences;
         _savedLotIds = ids.toSet();
         _selectedPermits = permits;
+        _occupancyReports = reports;
       });
     } catch (_) {
       if (!mounted) return;
@@ -134,6 +141,44 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  Future<bool> _submitOccupancyReport(
+    ParkingLot lot,
+    ParkingAvailabilityStatus status,
+  ) async {
+    final preferences = _preferences;
+    if (preferences == null || _savingReportLotIds.contains(lot.id)) {
+      return false;
+    }
+    setState(() => _savingReportLotIds.add(lot.id));
+    final report = OccupancyReport(
+      lotId: lot.id,
+      status: status,
+      reportedAt: DateTime.now(),
+    );
+    try {
+      await LocalOccupancyReportRepository(preferences).saveReport(report);
+      if (!mounted) return false;
+      setState(
+        () => _occupancyReports = {..._occupancyReports, lot.id: report},
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${lot.name} reported as ${status.label}.')),
+      );
+      return true;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save the availability report. Try again.'),
+          ),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _savingReportLotIds.remove(lot.id));
+    }
+  }
+
   void _openParkingDetails(ParkingLot lot) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -144,6 +189,10 @@ class _AppShellState extends State<AppShell> {
           onToggleSaved: _preferences == null ? null : _toggleSaved,
           onOpenMapDirections: _openMapDirections,
           selectedPermits: _selectedPermits,
+          occupancyReport: _occupancyReports[lot.id],
+          onReportAvailability: _preferences == null
+              ? null
+              : _submitOccupancyReport,
         ),
       ),
     );
@@ -256,6 +305,7 @@ class _AppShellState extends State<AppShell> {
         onLotSelected: _openParkingDetails,
         onGameDaySelected: _openGameDay,
         selectedPermits: _selectedPermits,
+        occupancyReports: _occupancyReports,
         onManagePermits: () => _selectTab(3),
       ),
       ParkingMapScreen(
@@ -264,6 +314,10 @@ class _AppShellState extends State<AppShell> {
         selectedPermits: _selectedPermits,
         directionsLotId: _mapDirectionsLotId,
         directionsOrigin: _mapDirectionsOrigin,
+        occupancyReports: _occupancyReports,
+        onReportAvailability: _preferences == null
+            ? null
+            : _submitOccupancyReport,
       ),
       SavedScreen(
         savedLotIds: _savedLotIds,
@@ -274,6 +328,7 @@ class _AppShellState extends State<AppShell> {
         onBrowseParking: () => _selectTab(0),
         onLotSelected: _openParkingDetails,
         selectedPermits: _selectedPermits,
+        occupancyReports: _occupancyReports,
       ),
       PermitPreferencesScreen(
         selectedPermits: _selectedPermits,

@@ -9,9 +9,11 @@ import '../data/sample_parking_lots.dart';
 import '../data/parking_locations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
+import '../models/parking_availability.dart';
 import '../theme/app_theme.dart';
 import '../widgets/parking_lot_tags.dart';
 import '../widgets/road_routing_consent.dart';
+import '../widgets/availability_indicator.dart';
 import '../services/directions_service.dart';
 import '../services/road_routing_service.dart';
 
@@ -24,6 +26,8 @@ class ParkingMapScreen extends StatefulWidget {
     this.directionsLotId,
     this.directionsOrigin,
     this.directionsService = const DirectionsService(),
+    this.occupancyReports = const {},
+    this.onReportAvailability,
   });
 
   final Set<String> savedLotIds;
@@ -32,6 +36,9 @@ class ParkingMapScreen extends StatefulWidget {
   final String? directionsLotId;
   final LatLng? directionsOrigin;
   final DirectionsService directionsService;
+  final Map<String, OccupancyReport> occupancyReports;
+  final Future<bool> Function(ParkingLot lot, ParkingAvailabilityStatus status)?
+  onReportAvailability;
 
   @override
   State<ParkingMapScreen> createState() => _ParkingMapScreenState();
@@ -112,8 +119,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             style: Theme.of(context).textTheme.bodyLarge
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
+          const SizedBox(height: 10),
+          const _AvailabilityLegend(),
           if (widget.selectedPermits.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             const _PermitLegend(),
           ],
           const SizedBox(height: 18),
@@ -169,6 +178,17 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                     final isIneligible =
                                         eligibility ==
                                         PermitEligibility.ineligible;
+                                    final availability =
+                                        widget
+                                            .occupancyReports[lot.id]
+                                            ?.status ??
+                                        lot.availabilityStatus;
+                                    final markerColor = isIneligible
+                                        ? colors.onSurfaceVariant
+                                        : availabilityColor(
+                                            availability,
+                                            colors,
+                                          );
                                     return Marker(
                                       key: ValueKey('parking-marker-${lot.id}'),
                                       point: location,
@@ -186,21 +206,26 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                           child: Column(
                                             children: [
                                               Container(
+                                                key: ValueKey(
+                                                  'parking-marker-density-${lot.id}',
+                                                ),
                                                 width: 46,
                                                 height: 46,
                                                 decoration: BoxDecoration(
                                                   color: isSelected
-                                                      ? colors.primary
-                                                      : colors.surface,
+                                                      ? markerColor
+                                                      : markerColor.withValues(
+                                                          alpha: 0.9,
+                                                        ),
                                                   shape: BoxShape.circle,
                                                   border: Border.all(
                                                     color: isIneligible
                                                         ? colors
                                                               .onSurfaceVariant
                                                         : isSelected
-                                                        ? colors.surface
-                                                        : colors.primary,
-                                                    width: 2,
+                                                        ? colors.primary
+                                                        : colors.surface,
+                                                    width: isSelected ? 3 : 2,
                                                   ),
                                                   boxShadow: [
                                                     BoxShadow(
@@ -222,10 +247,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                                       : Icons
                                                             .local_parking_rounded,
                                                   color: isSelected
-                                                      ? colors.onPrimary
+                                                      ? Colors.white
                                                       : isIneligible
                                                       ? colors.onSurfaceVariant
-                                                      : colors.primary,
+                                                      : Colors.white,
                                                   size: 25,
                                                 ),
                                               ),
@@ -236,7 +261,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                                   height: 16,
                                                   color: isIneligible
                                                       ? colors.onSurfaceVariant
-                                                      : colors.primary,
+                                                      : markerColor,
                                                 ),
                                               ),
                                             ],
@@ -328,7 +353,20 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             permitEligibility: _selectedLot.eligibilityFor(
               widget.selectedPermits,
             ),
+            occupancyReport: widget.occupancyReports[_selectedLot.id],
             onTap: () => widget.onLotSelected(_selectedLot),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              key: const ValueKey('map-report-availability'),
+              onPressed: widget.onReportAvailability == null
+                  ? null
+                  : _reportSelectedLot,
+              icon: const Icon(Icons.campaign_outlined),
+              label: const Text('Report availability'),
+            ),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -361,6 +399,20 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final camera = _mapController.camera;
     final zoom = (camera.zoom + amount).clamp(12.0, 18.0);
     _mapController.move(camera.center, zoom);
+  }
+
+  Future<void> _reportSelectedLot() async {
+    final callback = widget.onReportAvailability;
+    if (callback == null) return;
+    final lot = _selectedLot;
+    final current = widget.occupancyReports[lot.id];
+    final status = await showAvailabilityReportSheet(
+      context,
+      lotName: lot.name,
+      currentStatus: current?.status,
+    );
+    if (!mounted || status == null) return;
+    await callback(lot, status);
   }
 
   Future<void> _openExternalDirections() async {
@@ -591,11 +643,15 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
       if (opened) {
         Navigator.of(context).pop();
       } else {
-        setState(() => _error = 'Could not open Google Maps. Please try again.');
+        setState(
+          () => _error = 'Could not open Google Maps. Please try again.',
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Could not open Google Maps. Please try again.');
+        setState(
+          () => _error = 'Could not open Google Maps. Please try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _opening = false);
@@ -624,13 +680,17 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
               children: [
                 FilledButton.icon(
                   key: const ValueKey('directions-driving'),
-                  onPressed: _opening ? null : () => _open(DirectionsMode.driving),
+                  onPressed: _opening
+                      ? null
+                      : () => _open(DirectionsMode.driving),
                   icon: const Icon(Icons.directions_car_rounded),
                   label: const Text('Drive'),
                 ),
                 OutlinedButton.icon(
                   key: const ValueKey('directions-walking'),
-                  onPressed: _opening ? null : () => _open(DirectionsMode.walking),
+                  onPressed: _opening
+                      ? null
+                      : () => _open(DirectionsMode.walking),
                   icon: const Icon(Icons.directions_walk_rounded),
                   label: const Text('Walk'),
                 ),
@@ -847,12 +907,14 @@ class _SelectedLotCard extends StatelessWidget {
     required this.isSaved,
     required this.onTap,
     required this.permitEligibility,
+    this.occupancyReport,
   });
 
   final ParkingLot lot;
   final bool isSaved;
   final VoidCallback onTap;
   final PermitEligibility permitEligibility;
+  final OccupancyReport? occupancyReport;
 
   @override
   Widget build(BuildContext context) {
@@ -885,7 +947,9 @@ class _SelectedLotCard extends StatelessWidget {
                     ParkingLotTags(lot: lot),
                     const SizedBox(height: 3),
                     Text(
-                      '${lot.spacesLabel} · ${lot.priceLabel}',
+                      occupancyReport == null
+                          ? '${lot.spacesLabel} · ${lot.priceLabel}'
+                          : '${occupancyReport!.status.label} · ${formatReportAge(occupancyReport!.reportedAt, DateTime.now())}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall
@@ -920,6 +984,28 @@ class _SelectedLotCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AvailabilityLegend extends StatelessWidget {
+  const _AvailabilityLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          Text('Availability:', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(width: 8),
+          for (final status in ParkingAvailabilityStatus.values) ...[
+            AvailabilityIndicator(status: status, compact: true),
+            if (status != ParkingAvailabilityStatus.values.last)
+              const SizedBox(width: 6),
+          ],
+        ],
       ),
     );
   }

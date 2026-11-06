@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
+import '../models/parking_availability.dart';
 import '../theme/app_theme.dart';
 import '../widgets/parking_lot_card.dart';
 
@@ -15,6 +16,7 @@ class HomeScreen extends StatefulWidget {
     required this.onToggleSaved,
     required this.onLotSelected,
     required this.selectedPermits,
+    this.occupancyReports = const {},
     this.onGameDaySelected,
     this.onManagePermits,
   });
@@ -23,6 +25,7 @@ class HomeScreen extends StatefulWidget {
   final ValueChanged<ParkingLot>? onToggleSaved;
   final ValueChanged<ParkingLot> onLotSelected;
   final Set<ParkingPermit> selectedPermits;
+  final Map<String, OccupancyReport> occupancyReports;
   final VoidCallback? onGameDaySelected;
   final VoidCallback? onManagePermits;
 
@@ -229,6 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 permitEligibility: _visibleLots[index].eligibilityFor(
                   widget.selectedPermits,
                 ),
+                occupancyReport:
+                    widget.occupancyReports[_visibleLots[index].id],
               ),
               separatorBuilder: (_, _) => const SizedBox(height: 12),
             ),
