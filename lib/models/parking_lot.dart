@@ -1,4 +1,5 @@
 import 'parking_permit.dart';
+import 'parking_availability.dart';
 
 enum PermitEligibility { notConfigured, eligible, ineligible }
 
@@ -62,6 +63,11 @@ class ParkingLot {
   };
 
   bool get isAvailable => (spacesAvailable ?? 0) > 0;
+  ParkingAvailabilityStatus get availabilityStatus => spacesAvailable == null
+      ? ParkingAvailabilityStatus.unknown
+      : spacesAvailable! > 0
+      ? ParkingAvailabilityStatus.available
+      : ParkingAvailabilityStatus.full;
   String get spacesLabel => spacesAvailable == null
       ? 'Availability unknown'
       : '$spacesAvailable spots';

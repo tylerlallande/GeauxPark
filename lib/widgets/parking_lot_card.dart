@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/parking_lot.dart';
-import '../theme/app_theme.dart';
+import '../models/parking_availability.dart';
+import 'availability_indicator.dart';
 import 'parking_lot_tags.dart';
 
 class ParkingLotCard extends StatelessWidget {
@@ -12,6 +13,7 @@ class ParkingLotCard extends StatelessWidget {
     required this.isSaved,
     required this.onToggleSaved,
     this.permitEligibility = PermitEligibility.notConfigured,
+    this.occupancyReport,
   });
 
   final ParkingLot lot;
@@ -19,6 +21,7 @@ class ParkingLotCard extends StatelessWidget {
   final bool isSaved;
   final VoidCallback? onToggleSaved;
   final PermitEligibility permitEligibility;
+  final OccupancyReport? occupancyReport;
 
   @override
   Widget build(BuildContext context) {
@@ -74,33 +77,9 @@ class ParkingLotCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: lot.spacesAvailable == null
-                            ? colors.surfaceContainerHighest
-                            : lot.isAvailable
-                            ? colors.tertiary.withValues(alpha: 0.1)
-                            : colors.errorContainer,
-                        borderRadius: BorderRadius.circular(AppRadii.tag),
-                      ),
-                      child: Text(
-                        lot.spacesAvailable == null
-                            ? 'NOT REPORTED'
-                            : lot.isAvailable
-                            ? 'OPEN NOW'
-                            : 'FULL',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: lot.spacesAvailable == null
-                              ? colors.onSurfaceVariant
-                              : lot.isAvailable
-                              ? colors.tertiary
-                              : colors.onErrorContainer,
-                        ),
-                      ),
+                    AvailabilityIndicator(
+                      status: occupancyReport?.status ?? lot.availabilityStatus,
+                      compact: true,
                     ),
                     if (permitEligibility !=
                         PermitEligibility.notConfigured) ...[
@@ -132,8 +111,18 @@ class ParkingLotCard extends StatelessWidget {
                         ),
                         _LotFact(
                           icon: Icons.directions_car_filled_outlined,
-                          text: lot.spacesLabel,
-                          color: colors.tertiary,
+                          text: occupancyReport == null
+                              ? lot.spacesLabel
+                              : formatReportAge(
+                                  occupancyReport!.reportedAt,
+                                  DateTime.now(),
+                                ),
+                          color: occupancyReport == null
+                              ? colors.tertiary
+                              : availabilityColor(
+                                  occupancyReport!.status,
+                                  colors,
+                                ),
                         ),
                       ],
                     ),

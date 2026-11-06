@@ -28,7 +28,7 @@ void main() {
       250,
       scrollable: verticalScrollable().first,
     );
-    expect(find.text('NOT REPORTED'), findsOneWidget);
+    expect(find.text('Unknown'), findsWidgets);
     expect(find.text('FULL'), findsNothing);
     await tester.tap(find.byTooltip('Save Bernie Moore Lot (104)'));
     await tester.pumpAndSettle();
@@ -37,7 +37,7 @@ void main() {
     expect(find.text('Bernie Moore Lot (104)'), findsOneWidget);
     await tester.tap(find.text('Bernie Moore Lot (104)'));
     await tester.pumpAndSettle();
-    expect(find.text('Not reported'), findsOneWidget);
+    expect(find.text('Unknown'), findsWidgets);
     expect(find.text('Currently full'), findsNothing);
     await tester.scrollUntilVisible(
       find.text(
@@ -317,6 +317,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('About this location'),
+      200,
+      scrollable: verticalScrollable().first,
+    );
     expect(find.text('Information not provided yet.'), findsWidgets);
     await tester.scrollUntilVisible(
       find.textContaining('when a parking data provider is connected'),

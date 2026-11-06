@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
+import '../models/parking_availability.dart';
 import '../widgets/parking_lot_card.dart';
 import '../theme/app_theme.dart';
 
@@ -17,6 +18,7 @@ class SavedScreen extends StatelessWidget {
     required this.onBrowseParking,
     required this.onLotSelected,
     required this.selectedPermits,
+    this.occupancyReports = const {},
   });
 
   final Set<String> savedLotIds;
@@ -27,6 +29,7 @@ class SavedScreen extends StatelessWidget {
   final VoidCallback onBrowseParking;
   final ValueChanged<ParkingLot> onLotSelected;
   final Set<ParkingPermit> selectedPermits;
+  final Map<String, OccupancyReport> occupancyReports;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +130,7 @@ class SavedScreen extends StatelessWidget {
                       : () => onToggleSaved!(lot),
                   onTap: () => onLotSelected(lot),
                   permitEligibility: lot.eligibilityFor(selectedPermits),
+                  occupancyReport: occupancyReports[lot.id],
                 );
               },
             ),
