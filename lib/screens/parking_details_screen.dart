@@ -12,6 +12,8 @@ import '../services/directions_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/road_routing_consent.dart';
 import '../widgets/availability_indicator.dart';
+import '../widgets/loading_skeleton.dart';
+import '../widgets/smooth_reveal.dart';
 
 typedef ParkingSaveCallback = Future<bool> Function(ParkingLot lot);
 
@@ -240,22 +242,24 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
               onRetry: () => setState(_loadDetails),
             );
           }
-          return _DetailsContent(
-            lot: widget.lot,
-            details: snapshot.data,
-            onDirectionsRequested:
-                widget.onDirectionsRequested ?? _openDirections,
-            selectedPermits: widget.selectedPermits,
-            currentLocation: _currentLocation,
-            isLocating: _isLocating,
-            isOpeningDirections: _isOpeningDirections,
-            locationMessage: _locationMessage,
-            onRequestLocation: _getCurrentLocation,
-            occupancyReport: _occupancyReport,
-            isReportingAvailability: _isReportingAvailability,
-            onReportAvailability: widget.onReportAvailability == null
-                ? null
-                : _reportAvailability,
+          return SmoothReveal(
+            child: _DetailsContent(
+              lot: widget.lot,
+              details: snapshot.data,
+              onDirectionsRequested:
+                  widget.onDirectionsRequested ?? _openDirections,
+              selectedPermits: widget.selectedPermits,
+              currentLocation: _currentLocation,
+              isLocating: _isLocating,
+              isOpeningDirections: _isOpeningDirections,
+              locationMessage: _locationMessage,
+              onRequestLocation: _getCurrentLocation,
+              occupancyReport: _occupancyReport,
+              isReportingAvailability: _isReportingAvailability,
+              onReportAvailability: widget.onReportAvailability == null
+                  ? null
+                  : _reportAvailability,
+            ),
           );
         },
       ),
@@ -742,7 +746,25 @@ class _DetailsLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: 'Loading details for ${lot.name}',
-      child: const Center(child: CircularProgressIndicator()),
+      child: const SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20, 8, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            LoadingSkeleton(height: 190, borderRadius: 24),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: LoadingSkeleton(height: 92)),
+                SizedBox(width: 12),
+                Expanded(child: LoadingSkeleton(height: 92)),
+              ],
+            ),
+            SizedBox(height: 16),
+            LoadingSkeleton(height: 170, borderRadius: 20),
+          ],
+        ),
+      ),
     );
   }
 }

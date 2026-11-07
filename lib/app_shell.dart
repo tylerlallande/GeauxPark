@@ -181,8 +181,8 @@ class _AppShellState extends State<AppShell> {
 
   void _openParkingDetails(ParkingLot lot) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => ParkingDetailsScreen(
+      _smoothRoute(
+        ParkingDetailsScreen(
           lot: lot,
           repository: widget.parkingRepository,
           initiallySaved: _savedLotIds.contains(lot.id),
@@ -263,13 +263,39 @@ class _AppShellState extends State<AppShell> {
 
   void _openGameDay() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => GameDayScreen(
+      _smoothRoute(
+        GameDayScreen(
           plan: sampleGameDayPlan,
           lots: sampleParkingLots,
           onLotSelected: _openParkingDetails,
         ),
       ),
+    );
+  }
+
+  Route<void> _smoothRoute(Widget page) {
+    return PageRouteBuilder<void>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: const Duration(milliseconds: 260),
+      reverseTransitionDuration: const Duration(milliseconds: 220),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.disableAnimationsOf(context)) return child;
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.025),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
     );
   }
 
