@@ -201,70 +201,84 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                       child: GestureDetector(
                                         onTap: () =>
                                             setState(() => _selectedLot = lot),
-                                        child: Opacity(
+                                        child: AnimatedOpacity(
+                                          duration: const Duration(
+                                            milliseconds: 180,
+                                          ),
                                           opacity: isIneligible ? 0.42 : 1,
-                                          child: Column(
-                                            children: [
-                                              Container(
-                                                key: ValueKey(
-                                                  'parking-marker-density-${lot.id}',
-                                                ),
-                                                width: 46,
-                                                height: 46,
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? markerColor
-                                                      : markerColor.withValues(
-                                                          alpha: 0.9,
+                                          child: AnimatedScale(
+                                            duration: const Duration(
+                                              milliseconds: 180,
+                                            ),
+                                            curve: Curves.easeOutBack,
+                                            scale: isSelected ? 1 : 0.88,
+                                            child: Column(
+                                              children: [
+                                                Container(
+                                                  key: ValueKey(
+                                                    'parking-marker-density-${lot.id}',
+                                                  ),
+                                                  width: 46,
+                                                  height: 46,
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? markerColor
+                                                        : markerColor
+                                                              .withValues(
+                                                                alpha: 0.9,
+                                                              ),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: isIneligible
+                                                          ? colors
+                                                                .onSurfaceVariant
+                                                          : isSelected
+                                                          ? colors.primary
+                                                          : colors.surface,
+                                                      width: isSelected ? 3 : 2,
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: colors.shadow
+                                                            .withValues(
+                                                              alpha: 0.2,
+                                                            ),
+                                                        blurRadius: 8,
+                                                        offset: const Offset(
+                                                          0,
+                                                          3,
                                                         ),
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Icon(
+                                                    isIneligible
+                                                        ? Icons.block_rounded
+                                                        : Icons
+                                                              .local_parking_rounded,
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : isIneligible
+                                                        ? colors
+                                                              .onSurfaceVariant
+                                                        : Colors.white,
+                                                    size: 25,
+                                                  ),
+                                                ),
+                                                ClipPath(
+                                                  clipper:
+                                                      const _PinTipClipper(),
+                                                  child: Container(
+                                                    width: 16,
+                                                    height: 16,
                                                     color: isIneligible
                                                         ? colors
                                                               .onSurfaceVariant
-                                                        : isSelected
-                                                        ? colors.primary
-                                                        : colors.surface,
-                                                    width: isSelected ? 3 : 2,
+                                                        : markerColor,
                                                   ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: colors.shadow
-                                                          .withValues(
-                                                            alpha: 0.2,
-                                                          ),
-                                                      blurRadius: 8,
-                                                      offset: const Offset(
-                                                        0,
-                                                        3,
-                                                      ),
-                                                    ),
-                                                  ],
                                                 ),
-                                                child: Icon(
-                                                  isIneligible
-                                                      ? Icons.block_rounded
-                                                      : Icons
-                                                            .local_parking_rounded,
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                      : isIneligible
-                                                      ? colors.onSurfaceVariant
-                                                      : Colors.white,
-                                                  size: 25,
-                                                ),
-                                              ),
-                                              ClipPath(
-                                                clipper: const _PinTipClipper(),
-                                                child: Container(
-                                                  width: 16,
-                                                  height: 16,
-                                                  color: isIneligible
-                                                      ? colors.onSurfaceVariant
-                                                      : markerColor,
-                                                ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),

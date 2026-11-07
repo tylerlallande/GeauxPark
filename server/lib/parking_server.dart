@@ -78,12 +78,24 @@ class ParkingServer {
   }
 
   Future<void> _handle(HttpRequest request) async {
+    _addCorsHeaders(request.response);
+    if (request.method == 'OPTIONS') {
+      request.response.statusCode = HttpStatus.noContent;
+      await request.response.close();
+      return;
+    }
+
     if (request.method != 'GET') {
       await _writeJson(request, 405, {'error': 'Method not allowed'});
       return;
     }
 
     final segments = request.uri.pathSegments;
+    if (segments.length == 1 && segments.first == 'health') {
+      await _writeJson(request, 200, {'status': 'ok'});
+      return;
+    }
+
     if (segments.length == 1 && segments.first == 'lots') {
       final gameDayValue = request.uri.queryParameters['gameDay'];
       final gameDay = gameDayValue == null
@@ -131,5 +143,12 @@ class ParkingServer {
       ..headers.contentType = ContentType.json
       ..write(jsonEncode(body));
     await request.response.close();
+  }
+
+  void _addCorsHeaders(HttpResponse response) {
+    response.headers
+      ..set(HttpHeaders.accessControlAllowOriginHeader, '*')
+      ..set(HttpHeaders.accessControlAllowMethodsHeader, 'GET, OPTIONS')
+      ..set(HttpHeaders.accessControlAllowHeadersHeader, 'Content-Type');
   }
 }

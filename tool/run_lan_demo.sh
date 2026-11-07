@@ -3,6 +3,7 @@
 set -euo pipefail
 
 demo_port="8081"
+api_port="8080"
 demo_mode="release"
 
 for demo_argument in "$@"; do
@@ -55,20 +56,31 @@ echo "Flutter mode: $demo_mode"
 echo "Local URL: http://localhost:$demo_port"
 if [[ -n "$demo_ip" ]]; then
   echo "Phone URL: http://$demo_ip:$demo_port"
+  demo_api_url="http://$demo_ip:$api_port"
 else
   echo "Could not detect the LAN address automatically."
   echo "Run 'ipconfig getifaddr en0' and open http://<mac-ip>:$demo_port."
+  demo_api_url="http://127.0.0.1:$api_port"
 fi
+echo "Parking API: $demo_api_url"
 echo "Keep this terminal open. Press Ctrl+C to stop the demo."
 if [[ "$demo_mode" == "debug" ]]; then
   echo "Debug mode supports hot reload but may feel slower on a phone."
 fi
 echo
 
+GEAUXPARK_HOST=0.0.0.0 PORT="$api_port" dart run server/bin/server.dart &
+demo_api_pid=$!
+cleanup_demo() {
+  kill "$demo_api_pid" 2>/dev/null || true
+}
+trap cleanup_demo EXIT INT TERM
+
 demo_mode_argument="--$demo_mode"
-exec flutter run \
+flutter run \
   -d web-server \
   "$demo_mode_argument" \
   --web-hostname 0.0.0.0 \
   --web-port "$demo_port" \
+  --dart-define="GEAUXPARK_API_URL=$demo_api_url" \
   -t lib/main.dart
