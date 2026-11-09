@@ -11,6 +11,50 @@ import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/screens/parking_map_screen.dart';
 
 void main() {
+  testWidgets('map filters pins by any selected tag and clears filters', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ParkingMapScreen(
+            savedLotIds: const {},
+            selectedPermits: const {},
+            onLotSelected: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final markerLayer = find.byType(MarkerLayer);
+    for (final label in ['Commuter', 'Law']) {
+      await tester.tap(find.widgetWithText(FilterChip, label));
+      await tester.pumpAndSettle();
+    }
+    final markers = tester.widget<MarkerLayer>(markerLayer).markers;
+    expect(
+      markers.map((marker) => marker.key),
+      containsAll([
+        const ValueKey('parking-marker-bernie-moore-104'),
+        const ValueKey('parking-marker-south-law'),
+      ]),
+    );
+    expect(
+      markers.any(
+        (marker) =>
+            marker.key == const ValueKey('parking-marker-union-square-garage'),
+      ),
+      isFalse,
+    );
+    expect(find.text('Union Square Garage'), findsNothing);
+    await tester.tap(find.widgetWithText(FilterChip, 'All parking'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<MarkerLayer>(markerLayer).markers.length,
+      sampleParkingLots.length,
+    );
+  });
+
   test('imported lots have unique IDs and do not invent live data', () {
     expect(campusParkingLocations.length, 15);
     expect(sampleParkingLots.length, 18);

@@ -64,6 +64,24 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   };
 
   ParkingLot _selectedLot = sampleParkingLots.first;
+  Set<ParkingTag> _selectedTags = {};
+
+  List<ParkingLot> _matchingLots(Set<ParkingTag> tags) => sampleParkingLots
+      .where((lot) => tags.isEmpty || lot.tags.any(tags.contains))
+      .toList();
+
+  void _applyTags(Set<ParkingTag> tags) {
+    final matches = _matchingLots(tags);
+    setState(() {
+      _selectedTags = tags;
+      if (!matches.contains(_selectedLot)) {
+        _showRoute = false;
+        _roadRoute = null;
+        _routeError = null;
+        if (matches.isNotEmpty) _selectedLot = matches.first;
+      }
+    });
+  }
 
   @override
   void didUpdateWidget(covariant ParkingMapScreen oldWidget) {
@@ -86,6 +104,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       if (!mounted) return;
       setState(() {
         _selectedLot = lot;
+        if (_selectedTags.isNotEmpty && !lot.tags.any(_selectedTags.contains)) {
+          _selectedTags = {};
+        }
         _userLocation = origin;
         _showRoute = true;
         _roadRoute = null;
@@ -99,6 +120,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final matchingLots = _matchingLots(_selectedTags);
+    final canFilter = !_isGettingDirections && !_isDirectionsOpen;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -121,6 +144,30 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
           const SizedBox(height: 10),
           const _AvailabilityLegend(),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            children: [
+              FilterChip(
+                label: const Text('All parking'),
+                visualDensity: VisualDensity.compact,
+                selected: _selectedTags.isEmpty,
+                onSelected: canFilter ? (_) => _applyTags({}) : null,
+              ),
+              for (final tag in ParkingTag.values)
+                FilterChip(
+                  label: Text(tag.label),
+                  visualDensity: VisualDensity.compact,
+                  selected: _selectedTags.contains(tag),
+                  onSelected: canFilter
+                      ? (selected) => _applyTags({
+                          ..._selectedTags.where((active) => active != tag),
+                          if (selected) tag,
+                        })
+                      : null,
+                ),
+            ],
+          ),
           if (widget.selectedPermits.isNotEmpty) ...[
             const SizedBox(height: 8),
             const _PermitLegend(),
@@ -166,7 +213,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                           ),
                         MarkerLayer(
                           markers:
-                              sampleParkingLots
+                              matchingLots
                                   .map((lot) {
                                     final location = _lotLocations[lot.id];
                                     if (location == null) return null;
@@ -361,49 +408,53 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          _SelectedLotCard(
-            lot: _selectedLot,
-            isSaved: widget.savedLotIds.contains(_selectedLot.id),
-            permitEligibility: _selectedLot.eligibilityFor(
-              widget.selectedPermits,
+          if (matchingLots.isEmpty)
+            const Text('No parking lots match these tags.')
+          else ...[
+            _SelectedLotCard(
+              lot: _selectedLot,
+              isSaved: widget.savedLotIds.contains(_selectedLot.id),
+              permitEligibility: _selectedLot.eligibilityFor(
+                widget.selectedPermits,
+              ),
+              occupancyReport: widget.occupancyReports[_selectedLot.id],
+              onTap: () => widget.onLotSelected(_selectedLot),
             ),
-            occupancyReport: widget.occupancyReports[_selectedLot.id],
-            onTap: () => widget.onLotSelected(_selectedLot),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              key: const ValueKey('map-report-availability'),
-              onPressed: widget.onReportAvailability == null
-                  ? null
-                  : _reportSelectedLot,
-              icon: const Icon(Icons.campaign_outlined),
-              label: const Text('Report availability'),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const ValueKey('map-get-directions'),
-              onPressed:
-                  _isGettingDirections || _isDirectionsOpen || _isLocating
-                  ? null
-                  : _openExternalDirections,
-              icon: _isGettingDirections
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.directions_rounded),
-              label: Text(
-                _isGettingDirections
-                    ? 'Getting your location…'
-                    : 'Get directions',
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const ValueKey('map-report-availability'),
+                onPressed: widget.onReportAvailability == null
+                    ? null
+                    : _reportSelectedLot,
+                icon: const Icon(Icons.campaign_outlined),
+                label: const Text('Report availability'),
               ),
             ),
-          ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const ValueKey('map-get-directions'),
+                onPressed:
+                    _isGettingDirections || _isDirectionsOpen || _isLocating
+                    ? null
+                    : _openExternalDirections,
+                icon: _isGettingDirections
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.directions_rounded),
+                label: Text(
+                  _isGettingDirections
+                      ? 'Getting your location…'
+                      : 'Get directions',
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
