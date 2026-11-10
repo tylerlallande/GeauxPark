@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geauxpark/data/parking_locations.dart';
+import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/screens/parking_map_screen.dart';
 import 'package:geauxpark/services/directions_service.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
@@ -136,6 +137,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: ParkingMapScreen(
+            lots: sampleParkingLots,
             savedLotIds: const {},
             selectedPermits: const {},
             onLotSelected: (_) {},

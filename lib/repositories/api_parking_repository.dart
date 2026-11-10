@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/parking_details.dart';
+import '../models/parking_lot.dart';
 import 'parking_repository.dart';
 
 /// Loads parking details from the GeauxPark server and keeps the demo usable
@@ -19,6 +20,38 @@ class ApiParkingRepository implements ParkingRepository {
   final ParkingRepository fallback;
   final Duration timeout;
   final http.Client _client;
+
+  @override
+  Future<List<ParkingLot>> fetchParkingLots() async {
+    try {
+      final response = await _client
+          .get(baseUri.resolve('/lots'))
+          .timeout(timeout);
+      if (response.statusCode != 200) {
+        throw ParkingRepositoryException(
+          'Server returned ${response.statusCode}.',
+        );
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map || decoded['lots'] is! List) {
+        throw const ParkingRepositoryException(
+          'Server returned an invalid parking catalog.',
+        );
+      }
+      final lots = (decoded['lots'] as List<dynamic>)
+          .whereType<Map>()
+          .map((item) => ParkingLot.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false);
+      if (lots.isEmpty) {
+        throw const ParkingRepositoryException(
+          'Server returned an empty parking catalog.',
+        );
+      }
+      return lots;
+    } catch (_) {
+      return fallback.fetchParkingLots();
+    }
+  }
 
   @override
   Future<ParkingDetails?> fetchParkingDetails(String lotId) async {

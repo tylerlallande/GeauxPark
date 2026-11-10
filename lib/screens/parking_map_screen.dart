@@ -5,7 +5,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
-import '../data/sample_parking_lots.dart';
 import '../data/parking_locations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
@@ -20,6 +19,7 @@ import '../services/road_routing_service.dart';
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({
     super.key,
+    required this.lots,
     required this.savedLotIds,
     required this.onLotSelected,
     required this.selectedPermits,
@@ -30,6 +30,7 @@ class ParkingMapScreen extends StatefulWidget {
     this.onReportAvailability,
   });
 
+  final List<ParkingLot> lots;
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot> onLotSelected;
   final Set<ParkingPermit> selectedPermits;
@@ -57,16 +58,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   String? _routeError;
   final _roadRoutingService = const RoadRoutingService();
 
-  static final _lotLocations = {
-    for (final lot in sampleParkingLots)
-      if (parkingLocations[lot.id] case final location?)
-        lot.id: LatLng(location.latitude, location.longitude),
-  };
-
-  ParkingLot _selectedLot = sampleParkingLots.first;
+  late ParkingLot _selectedLot;
   Set<ParkingTag> _selectedTags = {};
 
-  List<ParkingLot> _matchingLots(Set<ParkingTag> tags) => sampleParkingLots
+  List<ParkingLot> _matchingLots(Set<ParkingTag> tags) => widget.lots
       .where((lot) => tags.isEmpty || lot.tags.any(tags.contains))
       .toList();
 
@@ -83,19 +78,47 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     });
   }
 
+  Map<String, LatLng> get _lotLocations {
+    final locations = <String, LatLng>{};
+    for (final lot in widget.lots) {
+      final location = _locationFor(lot);
+      if (location != null) locations[lot.id] = location;
+    }
+    return locations;
+  }
+
+  LatLng? _locationFor(ParkingLot lot) {
+    if (lot.latitude != null && lot.longitude != null) {
+      return LatLng(lot.latitude!, lot.longitude!);
+    }
+    final fallback = parkingLocations[lot.id];
+    return fallback == null
+        ? null
+        : LatLng(fallback.latitude, fallback.longitude);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLot = widget.lots.first;
+  }
+
   @override
   void didUpdateWidget(covariant ParkingMapScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!widget.lots.any((lot) => lot.id == _selectedLot.id)) {
+      _selectedLot = widget.lots.first;
+    }
     if (widget.directionsLotId == null ||
         (widget.directionsLotId == oldWidget.directionsLotId &&
             widget.directionsOrigin == oldWidget.directionsOrigin)) {
       return;
     }
-    final lotIndex = sampleParkingLots.indexWhere(
+    final lotIndex = widget.lots.indexWhere(
       (lot) => lot.id == widget.directionsLotId,
     );
     if (lotIndex < 0) return;
-    final lot = sampleParkingLots[lotIndex];
+    final lot = widget.lots[lotIndex];
     final origin = widget.directionsOrigin;
     if (origin == null) return;
     final destination = _lotLocations[lot.id];
@@ -145,28 +168,35 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           const SizedBox(height: 10),
           const _AvailabilityLegend(),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            children: [
-              FilterChip(
-                label: const Text('All parking'),
-                visualDensity: VisualDensity.compact,
-                selected: _selectedTags.isEmpty,
-                onSelected: canFilter ? (_) => _applyTags({}) : null,
-              ),
-              for (final tag in ParkingTag.values)
+          SizedBox(
+            height: 42,
+            child: ListView(
+              key: const ValueKey('map-lot-type-filters'),
+              scrollDirection: Axis.horizontal,
+              children: [
                 FilterChip(
-                  label: Text(tag.label),
+                  label: const Text('All parking'),
                   visualDensity: VisualDensity.compact,
-                  selected: _selectedTags.contains(tag),
-                  onSelected: canFilter
-                      ? (selected) => _applyTags({
-                          ..._selectedTags.where((active) => active != tag),
-                          if (selected) tag,
-                        })
-                      : null,
+                  selected: _selectedTags.isEmpty,
+                  onSelected: canFilter ? (_) => _applyTags({}) : null,
                 ),
-            ],
+                const SizedBox(width: 6),
+                for (final tag in ParkingTag.values) ...[
+                  FilterChip(
+                    label: Text(tag.label),
+                    visualDensity: VisualDensity.compact,
+                    selected: _selectedTags.contains(tag),
+                    onSelected: canFilter
+                        ? (selected) => _applyTags({
+                            ..._selectedTags.where((active) => active != tag),
+                            if (selected) tag,
+                          })
+                        : null,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              ],
+            ),
           ),
           if (widget.selectedPermits.isNotEmpty) ...[
             const SizedBox(height: 8),
