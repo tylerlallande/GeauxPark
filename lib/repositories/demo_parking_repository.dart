@@ -1,5 +1,7 @@
 import '../data/sample_parking_details.dart';
+import '../data/sample_parking_lots.dart';
 import '../models/parking_details.dart';
+import '../models/parking_lot.dart';
 import 'parking_repository.dart';
 
 /// Temporary local implementation of [ParkingRepository].
@@ -8,6 +10,11 @@ import 'parking_repository.dart';
 /// contract is available. The screens only depend on [ParkingRepository].
 class DemoParkingRepository implements ParkingRepository {
   const DemoParkingRepository();
+
+  @override
+  Future<List<ParkingLot>> fetchParkingLots() async {
+    return List.unmodifiable(sampleParkingLots);
+  }
 
   @override
   Future<ParkingDetails?> fetchParkingDetails(String lotId) async {

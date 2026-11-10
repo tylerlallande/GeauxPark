@@ -15,6 +15,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: HomeScreen(
+            lots: sampleParkingLots,
             savedLotIds: const {},
             selectedPermits: const {},
             onToggleSaved: null,

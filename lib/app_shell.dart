@@ -37,6 +37,7 @@ class _AppShellState extends State<AppShell> {
   static const _parkingPermitsKey = 'selected_parking_permit_ids';
   SharedPreferences? _preferences;
   Set<String> _savedLotIds = {};
+  List<ParkingLot> _parkingLots = sampleParkingLots;
   Set<ParkingPermit> _selectedPermits = {};
   Map<String, OccupancyReport> _occupancyReports = {};
   bool _saving = false;
@@ -53,6 +54,22 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _loadSavedLots();
+    _loadParkingLots();
+  }
+
+  Future<void> _loadParkingLots() async {
+    try {
+      final lots = await widget.parkingRepository.fetchParkingLots();
+      if (!mounted || lots.isEmpty) return;
+      setState(() => _parkingLots = lots);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Using offline parking data for this session.'),
+        ),
+      );
+    }
   }
 
   Future<void> _loadSavedLots() async {
@@ -266,7 +283,7 @@ class _AppShellState extends State<AppShell> {
       _smoothRoute(
         GameDayScreen(
           plan: sampleGameDayPlan,
-          lots: sampleParkingLots,
+          lots: _parkingLots,
           onLotSelected: _openParkingDetails,
         ),
       ),
@@ -326,6 +343,7 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final screens = <Widget>[
       HomeScreen(
+        lots: _parkingLots,
         savedLotIds: _savedLotIds,
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
         onLotSelected: _openParkingDetails,
@@ -335,6 +353,7 @@ class _AppShellState extends State<AppShell> {
         onManagePermits: () => _selectTab(3),
       ),
       ParkingMapScreen(
+        lots: _parkingLots,
         savedLotIds: _savedLotIds,
         onLotSelected: _openParkingDetails,
         selectedPermits: _selectedPermits,
@@ -346,6 +365,7 @@ class _AppShellState extends State<AppShell> {
             : _submitOccupancyReport,
       ),
       SavedScreen(
+        lots: _parkingLots,
         savedLotIds: _savedLotIds,
         isLoading: _preferences == null,
         loadFailed: _loadFailed,

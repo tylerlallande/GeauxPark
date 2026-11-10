@@ -18,6 +18,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: ParkingMapScreen(
+            lots: sampleParkingLots,
             savedLotIds: const {},
             selectedPermits: const {},
             onLotSelected: (_) {},
@@ -27,8 +28,14 @@ void main() {
     );
     await tester.pumpAndSettle();
     final markerLayer = find.byType(MarkerLayer);
+    final filterScroll = find.descendant(
+      of: find.byKey(const ValueKey('map-lot-type-filters')),
+      matching: find.byType(Scrollable),
+    );
     for (final label in ['Commuter', 'Law']) {
-      await tester.tap(find.widgetWithText(FilterChip, label));
+      final chip = find.widgetWithText(FilterChip, label);
+      await tester.scrollUntilVisible(chip, 160, scrollable: filterScroll);
+      await tester.tap(chip);
       await tester.pumpAndSettle();
     }
     final markers = tester.widget<MarkerLayer>(markerLayer).markers;
@@ -47,7 +54,10 @@ void main() {
       isFalse,
     );
     expect(find.text('Union Square Garage'), findsNothing);
-    await tester.tap(find.widgetWithText(FilterChip, 'All parking'));
+    tester.state<ScrollableState>(filterScroll).position.jumpTo(0);
+    await tester.pumpAndSettle();
+    final allParking = find.widgetWithText(FilterChip, 'All parking');
+    await tester.tap(allParking);
     await tester.pumpAndSettle();
     expect(
       tester.widget<MarkerLayer>(markerLayer).markers.length,
@@ -77,6 +87,10 @@ void main() {
     final apiLots = (jsonDecode(
       File('server/data/lots.json').readAsStringSync(),
     ) as List).cast<Map<String, dynamic>>();
+    expect(
+      apiLots.map((lot) => lot['id']).toSet(),
+      sampleParkingLots.map((lot) => lot.id).toSet(),
+    );
     for (final lot in sampleParkingLots) {
       final location = parkingLocations[lot.id]!;
       final details = sampleParkingDetails[lot.id]!;
@@ -95,6 +109,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: ParkingMapScreen(
+            lots: sampleParkingLots,
             savedLotIds: const {},
             selectedPermits: const {},
             onLotSelected: (_) {},

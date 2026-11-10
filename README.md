@@ -18,6 +18,7 @@ Help students and football fans find parking before arriving at busy locations.
 - **Location Details:** View information about available parking options.
 - **Saved Parking:** Tap a lot's bookmark to save it, then open the Saved tab to find or remove it. Saved lots stay on the current device or browser after restarting the app.
 - **Campus Lots:** Browse 18 parking locations, including 15 additional lots verified against LSU's campus map. Newly imported lots show unknown availability rather than simulated space counts. See [location sources](docs/parking_locations.md).
+- **Server-backed Catalog:** During the LAN demo, lot names, prices, permit access, availability, and coordinates load from the GeauxPark Dart API. The app automatically falls back to its bundled 18-lot catalog if the server or network is unavailable.
 - **Lot Tags & Filters:** Filter Home results by Visitor, Commuter, Residential, Greek housing, Law, Park & Geaux, Garage, or Event. Select any matching lot types and combine quick filters (such as Available now and Accessible). Search matches tag names, and Clear resets search and filters. Tags also appear in Saved, details, and the map's selected-lot card.
 - **Permit Eligibility:** Select LSU parking permits in the Profile tab to highlight eligible lots and dim restricted lots across the app.
 - **User-Friendly Interface:** Navigate the app with a clean, modern design.
@@ -101,8 +102,9 @@ The server listens on `http://localhost:8080` by default. Set `PORT` or
 
 ```text
 GET /lots
-GET /lots?gameDay=true&permitType=student
+GET /lots?gameDay=true&permitType=commuter
 GET /lots/{id}
+GET /health
 ```
 
 `/parking-lots/{id}` is also supported for compatibility with the original
@@ -123,9 +125,10 @@ Connect the Mac and phone to the same Wi-Fi network, then run:
 ```
 
 The launcher prints the exact URL to open on the phone and serves an optimized
-release build on port `8081` by default. Keep the terminal open while using the
-demo, and press Ctrl+C to stop it. To choose another port, pass it as the first
-argument:
+release build on port `8081` by default. It also starts the GeauxPark API on
+port `8080` and configures the Flutter app to use the Mac's LAN address. Keep
+the terminal open while using the demo, and press Ctrl+C to stop both services.
+To choose another app port, pass it as the first argument:
 
 ```bash
 ./tool/run_lan_demo.sh 9000
@@ -146,10 +149,13 @@ network name.
 To launch the demo manually instead, run:
 
 ```bash
+GEAUXPARK_HOST=0.0.0.0 PORT=8080 dart run server/bin/server.dart
+
 flutter run -d web-server \
   --release \
   --web-hostname 0.0.0.0 \
   --web-port 8081 \
+  --dart-define=GEAUXPARK_API_URL=http://<mac-ip-address>:8080 \
   -t lib/main.dart
 ```
 
@@ -166,12 +172,15 @@ in this demo. Mobile browsers can restrict precise location on plain HTTP LAN
 addresses; if that happens, location-dependent directions show the app's retry
 state while the remaining workflow stays available.
 
+See the [MVP demo runbook](docs/mvp_demo_runbook.md) for the final preflight,
+recording flow, fallback plan, and release checklist.
+
 ## Future Improvements
 
 - Integrate live parking availability.
 - Add parking filters and search preferences.
 - Add walking directions and offline route support.
-- Include parking prices and operating hours when available.
+- Keep LSU parking prices and operating hours synchronized with their official sources.
 - Add user accounts and saved parking locations.
 
 ## Project Status

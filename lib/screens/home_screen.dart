@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
@@ -12,6 +11,7 @@ enum ParkingFilter { all, myPermits, available, free, accessible }
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
+    required this.lots,
     required this.savedLotIds,
     required this.onToggleSaved,
     required this.onLotSelected,
@@ -21,6 +21,7 @@ class HomeScreen extends StatefulWidget {
     this.onManagePermits,
   });
 
+  final List<ParkingLot> lots;
   final Set<String> savedLotIds;
   final ValueChanged<ParkingLot>? onToggleSaved;
   final ValueChanged<ParkingLot> onLotSelected;
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<ParkingLot> get _visibleLots {
-    return sampleParkingLots.where((lot) {
+    return widget.lots.where((lot) {
       final normalizedQuery = _query.trim().toLowerCase();
       final matchesSearch =
           normalizedQuery.isEmpty ||

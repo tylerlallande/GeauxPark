@@ -29,7 +29,41 @@ class ParkingLot {
     required this.permitTypes,
     this.distanceReference,
     this.extraTags = const {},
+    this.latitude,
+    this.longitude,
   });
+
+  factory ParkingLot.fromJson(Map<String, dynamic> json) {
+    final name = json['name'] as String? ?? 'Unnamed parking lot';
+    final permits = (json['permitTypes'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .map(parkingPermitFromId)
+        .whereType<ParkingPermit>()
+        .toSet();
+    final extraTags = (json['extraTags'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .map(_parkingTagFromId)
+        .whereType<ParkingTag>()
+        .toSet();
+    if (json['gameDay'] == true) extraTags.add(ParkingTag.event);
+    if (name.toLowerCase().contains('garage')) {
+      extraTags.add(ParkingTag.garage);
+    }
+    return ParkingLot(
+      id: json['id'] as String,
+      name: name,
+      address: json['address'] as String? ?? 'LSU campus',
+      distanceMiles: (json['distanceMiles'] as num?)?.toDouble() ?? 0,
+      priceLabel: json['priceLabel'] as String? ?? 'Check posted signs',
+      spacesAvailable: (json['spacesAvailable'] as num?)?.toInt(),
+      isAccessible: json['isAccessible'] as bool?,
+      permitTypes: permits,
+      distanceReference: json['distanceReference'] as String?,
+      extraTags: extraTags,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+    );
+  }
 
   final String id;
   final String name;
@@ -41,6 +75,8 @@ class ParkingLot {
   final Set<ParkingPermit> permitTypes;
   final String? distanceReference;
   final Set<ParkingTag> extraTags;
+  final double? latitude;
+  final double? longitude;
 
   Set<ParkingTag> get tags => {
     ...extraTags,
@@ -81,4 +117,15 @@ class ParkingLot {
         ? PermitEligibility.eligible
         : PermitEligibility.ineligible;
   }
+}
+
+ParkingTag? _parkingTagFromId(String id) {
+  final normalized = id.trim().toLowerCase();
+  for (final tag in ParkingTag.values) {
+    if (tag.name.toLowerCase() == normalized ||
+        tag.label.toLowerCase() == normalized) {
+      return tag;
+    }
+  }
+  return null;
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_parking_lots.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
@@ -10,6 +9,7 @@ import '../theme/app_theme.dart';
 class SavedScreen extends StatelessWidget {
   const SavedScreen({
     super.key,
+    required this.lots,
     required this.savedLotIds,
     required this.isLoading,
     required this.loadFailed,
@@ -21,6 +21,7 @@ class SavedScreen extends StatelessWidget {
     this.occupancyReports = const {},
   });
 
+  final List<ParkingLot> lots;
   final Set<String> savedLotIds;
   final bool isLoading;
   final bool loadFailed;
@@ -33,7 +34,7 @@ class SavedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lots = sampleParkingLots
+    final lots = this.lots
         .where((lot) => savedLotIds.contains(lot.id))
         .toList();
 

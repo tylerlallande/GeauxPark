@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/main.dart';
 import 'package:geauxpark/models/parking_details.dart';
 import 'package:geauxpark/models/parking_lot.dart';
@@ -235,6 +236,29 @@ void main() {
     expect(find.text('Union Square Garage'), findsNothing);
   });
 
+  testWidgets('server catalog replaces bundled lots across the app', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const GeauxParkApp(parkingRepository: _CatalogRepository()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(SearchBar), 'Server Test');
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Server Test Lot'),
+      250,
+      scrollable: verticalScrollable().first,
+    );
+    expect(find.text('Server Test Lot'), findsOneWidget);
+    expect(find.text('Union Square Garage'), findsNothing);
+
+    await tester.tap(find.text('Map'));
+    await tester.pumpAndSettle();
+    expect(find.text('Server Test Lot'), findsOneWidget);
+  });
+
   testWidgets('parking card opens repository-backed details', (tester) async {
     await tester.pumpWidget(const GeauxParkApp());
     await tester.pumpAndSettle();
@@ -368,6 +392,9 @@ const _testLot = ParkingLot(
 class _FakeParkingRepository implements ParkingRepository {
   const _FakeParkingRepository({this.result, this.shouldThrow = false});
 
+  @override
+  Future<List<ParkingLot>> fetchParkingLots() async => sampleParkingLots;
+
   final ParkingDetails? result;
   final bool shouldThrow;
 
@@ -379,3 +406,33 @@ class _FakeParkingRepository implements ParkingRepository {
     return result;
   }
 }
+
+class _CatalogRepository implements ParkingRepository {
+  const _CatalogRepository();
+
+  @override
+  Future<List<ParkingLot>> fetchParkingLots() async => const [_serverLot];
+
+  @override
+  Future<ParkingDetails?> fetchParkingDetails(String lotId) async {
+    return const ParkingDetails(
+      lotId: 'server-test-lot',
+      description: 'Loaded from the server catalog.',
+      latitude: 30.412,
+      longitude: -91.181,
+    );
+  }
+}
+
+const _serverLot = ParkingLot(
+  id: 'server-test-lot',
+  name: 'Server Test Lot',
+  address: 'LSU campus',
+  distanceMiles: 0.1,
+  priceLabel: 'Permit required',
+  spacesAvailable: null,
+  isAccessible: null,
+  permitTypes: {ParkingPermit.commuter},
+  latitude: 30.412,
+  longitude: -91.181,
+);
