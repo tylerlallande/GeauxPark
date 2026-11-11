@@ -230,6 +230,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                           urlTemplate:
                               'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                           userAgentPackageName: 'com.geauxpark.geauxpark',
+                          // The tab remains mounted while inactive and its
+                          // tickers are paused for smoother navigation. Avoid
+                          // fade-in tiles getting stuck transparent when they
+                          // finish loading before the Map tab becomes active.
+                          tileDisplay: const TileDisplay.instantaneous(),
                         ),
                         if (_roadRoute != null)
                           PolylineLayer(
