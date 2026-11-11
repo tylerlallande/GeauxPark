@@ -2,10 +2,62 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/models/parking_lot.dart';
+import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/screens/home_screen.dart';
 import 'package:geauxpark/widgets/parking_lot_card.dart';
 
 void main() {
+  testWidgets(
+    'Home puts unowned permits last and updates when permits change',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 2500);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final lots = [
+        sampleParkingLots[2],
+        sampleParkingLots[1],
+        sampleParkingLots[0],
+      ];
+      Future<void> render(Set<ParkingPermit> permits) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HomeScreen(
+                lots: lots,
+                savedLotIds: const {},
+                selectedPermits: permits,
+                onToggleSaved: null,
+                onLotSelected: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      List<String> visibleIds() => tester
+          .widgetList<ParkingLotCard>(find.byType(ParkingLotCard))
+          .map((card) => card.lot.id)
+          .toList();
+      await render({ParkingPermit.visitor});
+      expect(visibleIds(), [
+        'west-stadium-lot',
+        'union-square-garage',
+        'nicholson-gateway',
+      ]);
+      await render({ParkingPermit.nicholsonGatewayResident});
+      expect(visibleIds(), [
+        'nicholson-gateway',
+        'west-stadium-lot',
+        'union-square-garage',
+      ]);
+      await render({});
+      expect(visibleIds(), lots.map((lot) => lot.id).toList());
+      expect(lots.first.id, 'nicholson-gateway');
+    },
+  );
+
   Future<void> showHome(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1000, 1800);
     tester.view.devicePixelRatio = 1;

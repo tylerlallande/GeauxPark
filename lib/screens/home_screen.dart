@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<ParkingLot> get _visibleLots {
-    return widget.lots.where((lot) {
+    final matches = widget.lots.where((lot) {
       final normalizedQuery = _query.trim().toLowerCase();
       final matchesSearch =
           normalizedQuery.isEmpty ||
@@ -71,6 +71,19 @@ class _HomeScreenState extends State<HomeScreen> {
           _selectedTags.isEmpty || lot.tags.any(_selectedTags.contains);
       return matchesSearch && matchesFilters && matchesTags;
     }).toList();
+    // Keep the existing order within each permit group.
+    return [
+      ...matches.where(
+        (lot) =>
+            lot.eligibilityFor(widget.selectedPermits) !=
+            PermitEligibility.ineligible,
+      ),
+      ...matches.where(
+        (lot) =>
+            lot.eligibilityFor(widget.selectedPermits) ==
+            PermitEligibility.ineligible,
+      ),
+    ];
   }
 
   @override
