@@ -11,6 +11,30 @@ import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/screens/parking_map_screen.dart';
 
 void main() {
+  testWidgets('map tiles render without depending on an active animation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TickerMode(
+          enabled: false,
+          child: Scaffold(
+            body: ParkingMapScreen(
+              lots: sampleParkingLots,
+              savedLotIds: const {},
+              selectedPermits: const {},
+              onLotSelected: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final tileLayer = tester.widget<TileLayer>(find.byType(TileLayer));
+    expect(tileLayer.tileDisplay, isA<InstantaneousTileDisplay>());
+  });
+
   testWidgets('map filters pins by any selected tag and clears filters', (
     tester,
   ) async {
