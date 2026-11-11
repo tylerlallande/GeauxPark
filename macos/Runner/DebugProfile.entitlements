@@ -8,5 +8,8 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Allow map tiles, parking API requests, and road routing. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
 </dict>
 </plist>

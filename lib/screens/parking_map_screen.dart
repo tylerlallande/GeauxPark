@@ -229,7 +229,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         TileLayer(
                           urlTemplate:
                               'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.geauxpark.app',
+                          userAgentPackageName: 'com.geauxpark.geauxpark',
                         ),
                         if (_roadRoute != null)
                           PolylineLayer(
