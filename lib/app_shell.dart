@@ -216,7 +216,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _openMapDirections((ParkingDetails, LatLng) request) {
-    Navigator.of(context).pop();
+    Navigator.of(context).popUntil((route) => route.isFirst);
     setState(() {
       _mapDirectionsLotId = request.$1.lotId;
       _mapDirectionsOrigin = request.$2;
