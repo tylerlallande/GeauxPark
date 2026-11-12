@@ -26,6 +26,7 @@ class ParkingMapScreen extends StatefulWidget {
     this.directionsLotId,
     this.directionsOrigin,
     this.directionsService = const DirectionsService(),
+    this.roadRoutingService = const RoadRoutingService(),
     this.occupancyReports = const {},
     this.onReportAvailability,
   });
@@ -37,6 +38,7 @@ class ParkingMapScreen extends StatefulWidget {
   final String? directionsLotId;
   final LatLng? directionsOrigin;
   final DirectionsService directionsService;
+  final RoadRoutingService roadRoutingService;
   final Map<String, OccupancyReport> occupancyReports;
   final Future<bool> Function(ParkingLot lot, ParkingAvailabilityStatus status)?
   onReportAvailability;
@@ -56,10 +58,22 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   bool _showRoute = false;
   RoadRoute? _roadRoute;
   String? _routeError;
-  final _roadRoutingService = const RoadRoutingService();
+  int _routeRequestId = 0;
 
   late ParkingLot _selectedLot;
   Set<ParkingTag> _selectedTags = {};
+
+  void _selectLot(ParkingLot lot) {
+    if (lot.id == _selectedLot.id) return;
+    setState(() {
+      _selectedLot = lot;
+      _routeRequestId++;
+      _showRoute = false;
+      _roadRoute = null;
+      _routeError = null;
+      _isGettingDirections = false;
+    });
+  }
 
   List<ParkingLot> _matchingLots(Set<ParkingTag> tags) => widget.lots
       .where((lot) => tags.isEmpty || lot.tags.any(tags.contains))
@@ -281,8 +295,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                       alignment: Alignment.topCenter,
                                       rotate: true,
                                       child: GestureDetector(
-                                        onTap: () =>
-                                            setState(() => _selectedLot = lot),
+                                        onTap: () => _selectLot(lot),
                                         child: AnimatedOpacity(
                                           duration: const Duration(
                                             milliseconds: 180,
@@ -600,12 +613,14 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 
   Future<void> _fetchRoadRoute(LatLng origin, LatLng destination) async {
+    final requestId = ++_routeRequestId;
+    bool isCurrent() => mounted && requestId == _routeRequestId;
     try {
-      final route = await _roadRoutingService.drivingRoute(
+      final route = await widget.roadRoutingService.drivingRoute(
         origin: origin,
         destination: destination,
       );
-      if (!mounted) return;
+      if (!isCurrent()) return;
       setState(() {
         _roadRoute = route;
         _routeError = null;
@@ -618,15 +633,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         ),
       );
     } on RoadRoutingException catch (error) {
-      if (mounted) setState(() => _routeError = error.message);
+      if (isCurrent()) setState(() => _routeError = error.message);
     } catch (_) {
-      if (mounted) {
+      if (isCurrent()) {
         setState(
           () => _routeError = 'Could not load road directions. Check your connection and try again.',
         );
       }
     } finally {
-      if (mounted) setState(() => _isGettingDirections = false);
+      if (isCurrent()) setState(() => _isGettingDirections = false);
     }
   }
 
