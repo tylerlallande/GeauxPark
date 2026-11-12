@@ -19,7 +19,9 @@ void main() {
     'macos/Runner/Release.entitlements',
   ]) {
     test('$entitlement allows outgoing network requests', () {
-      final contents = File(entitlement).readAsStringSync();
+      final contents = File(entitlement)
+          .readAsStringSync()
+          .replaceAll('\r\n', '\n');
 
       expect(contents, contains('com.apple.security.network.client'));
       expect(
