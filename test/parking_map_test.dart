@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/data/parking_locations.dart';
 import 'package:geauxpark/data/campus_parking_locations.dart';
@@ -11,6 +12,59 @@ import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/screens/parking_map_screen.dart';
 
 void main() {
+  testWidgets('map markers expose labels and support keyboard selection', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ParkingMapScreen(
+            lots: sampleParkingLots,
+            savedLotIds: const {},
+            selectedPermits: const {},
+            onLotSelected: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final gatewaySemantics = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          (widget.properties.label?.contains('Nicholson Gateway') ?? false),
+      description: 'Nicholson Gateway marker semantics',
+    );
+    expect(gatewaySemantics, findsOneWidget);
+    final semantics = tester.widget<Semantics>(gatewaySemantics);
+    expect(semantics.properties.button, isTrue);
+    expect(semantics.properties.onTap, isNotNull);
+    expect(semantics.properties.label, contains('Nicholson Gateway'));
+    expect(semantics.properties.label, contains('Availability:'));
+
+    final focusNode = Focus.of(tester.element(gatewaySemantics.first));
+    focusNode.requestFocus();
+    await tester.pump();
+    expect(focusNode.hasFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('Nicholson Gateway'), findsOneWidget);
+
+    final unionSemantics = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          (widget.properties.label?.contains('Union Square Garage') ?? false),
+      description: 'Union Square Garage marker semantics',
+    );
+    final unionFocusNode = Focus.of(tester.element(unionSemantics));
+    unionFocusNode.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+    expect(find.text('Union Square Garage'), findsOneWidget);
+  });
+
   testWidgets('map tiles render without depending on an active animation', (
     tester,
   ) async {
