@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
@@ -56,6 +57,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   bool _isGettingDirections = false;
   bool _isDirectionsOpen = false;
   bool _showRoute = false;
+  String? _focusedLotId;
   RoadRoute? _roadRoute;
   String? _routeError;
   int _routeRequestId = 0;
@@ -268,6 +270,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                     if (location == null) return null;
                                     final isSelected =
                                         lot.id == _selectedLot.id;
+                                    final isFocused = lot.id == _focusedLotId;
                                     final eligibility = lot.eligibilityFor(
                                       widget.selectedPermits,
                                     );
@@ -285,6 +288,14 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                             availability,
                                             colors,
                                           );
+                                    final permitStatus = switch (eligibility) {
+                                      PermitEligibility.eligible =>
+                                        'Eligible for your selected permit.',
+                                      PermitEligibility.ineligible => 'Not eligible for your selected permit.',
+                                      PermitEligibility.notConfigured =>
+                                        'Parking permit not configured.',
+                                    };
+
                                     return Marker(
                                       key: ValueKey('parking-marker-${lot.id}'),
                                       point: location,
@@ -294,85 +305,134 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                                       // zoom level and while rotating the map.
                                       alignment: Alignment.topCenter,
                                       rotate: true,
-                                      child: GestureDetector(
-                                        onTap: () => _selectLot(lot),
-                                        child: AnimatedOpacity(
-                                          duration: const Duration(
-                                            milliseconds: 180,
-                                          ),
-                                          opacity: isIneligible ? 0.42 : 1,
-                                          child: AnimatedScale(
-                                            duration: const Duration(
-                                              milliseconds: 180,
-                                            ),
-                                            curve: Curves.easeOutBack,
-                                            scale: isSelected ? 1 : 0.88,
-                                            child: Column(
-                                              children: [
-                                                Container(
-                                                  key: ValueKey(
-                                                    'parking-marker-density-${lot.id}',
-                                                  ),
-                                                  width: 46,
-                                                  height: 46,
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected
-                                                        ? markerColor
-                                                        : markerColor
-                                                              .withValues(
-                                                                alpha: 0.9,
-                                                              ),
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: isIneligible
-                                                          ? colors
-                                                                .onSurfaceVariant
-                                                          : isSelected
-                                                          ? colors.primary
-                                                          : colors.surface,
-                                                      width: isSelected ? 3 : 2,
-                                                    ),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: colors.shadow
-                                                            .withValues(
-                                                              alpha: 0.2,
-                                                            ),
-                                                        blurRadius: 8,
-                                                        offset: const Offset(
-                                                          0,
-                                                          3,
-                                                        ),
+                                      child: Focus(
+                                        onFocusChange: (focused) {
+                                          setState(() {
+                                            if (focused) {
+                                              _focusedLotId = lot.id;
+                                            } else if (_focusedLotId ==
+                                                lot.id) {
+                                              _focusedLotId = null;
+                                            }
+                                          });
+                                        },
+                                        onKeyEvent: (_, event) {
+                                          if (event is! KeyDownEvent ||
+                                              (event.logicalKey !=
+                                                      LogicalKeyboardKey
+                                                          .enter &&
+                                                  event.logicalKey !=
+                                                      LogicalKeyboardKey
+                                                          .numpadEnter &&
+                                                  event.logicalKey !=
+                                                      LogicalKeyboardKey
+                                                          .space)) {
+                                            return KeyEventResult.ignored;
+                                          }
+                                          _selectLot(lot);
+                                          return KeyEventResult.handled;
+                                        },
+                                        child: Semantics(
+                                          excludeSemantics: true,
+                                          button: true,
+                                          selected: isSelected,
+                                          focusable: true,
+                                          focused: isFocused,
+                                          label:
+                                              '${lot.name}. Availability: '
+                                              '${availability.label}. '
+                                              '$permitStatus',
+                                          onTapHint: 'Select parking lot',
+                                          onTap: () => _selectLot(lot),
+                                          child: GestureDetector(
+                                            onTap: () => _selectLot(lot),
+                                            child: AnimatedOpacity(
+                                              duration: const Duration(
+                                                milliseconds: 180,
+                                              ),
+                                              opacity: isIneligible ? 0.42 : 1,
+                                              child: AnimatedScale(
+                                                duration: const Duration(
+                                                  milliseconds: 180,
+                                                ),
+                                                curve: Curves.easeOutBack,
+                                                scale: isSelected ? 1 : 0.88,
+                                                child: Column(
+                                                  children: [
+                                                    Container(
+                                                      key: ValueKey(
+                                                        'parking-marker-density-${lot.id}',
                                                       ),
-                                                    ],
-                                                  ),
-                                                  child: Icon(
-                                                    isIneligible
-                                                        ? Icons.block_rounded
-                                                        : Icons
-                                                              .local_parking_rounded,
-                                                    color: isSelected
-                                                        ? Colors.white
-                                                        : isIneligible
-                                                        ? colors
-                                                              .onSurfaceVariant
-                                                        : Colors.white,
-                                                    size: 25,
-                                                  ),
+                                                      width: 46,
+                                                      height: 46,
+                                                      decoration: BoxDecoration(
+                                                        color: isSelected
+                                                            ? markerColor
+                                                            : markerColor
+                                                                  .withValues(
+                                                                    alpha: 0.9,
+                                                                  ),
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(
+                                                          color: isFocused
+                                                              ? colors.secondary
+                                                              : isIneligible
+                                                              ? colors
+                                                                    .onSurfaceVariant
+                                                              : isSelected
+                                                              ? colors.primary
+                                                              : colors.surface,
+                                                          width:
+                                                              isSelected ||
+                                                                  isFocused
+                                                              ? 3
+                                                              : 2,
+                                                        ),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: colors.shadow
+                                                                .withValues(
+                                                                  alpha: 0.2,
+                                                                ),
+                                                            blurRadius: 8,
+                                                            offset:
+                                                                const Offset(
+                                                                  0,
+                                                                  3,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: Icon(
+                                                        isIneligible
+                                                            ? Icons
+                                                                  .block_rounded
+                                                            : Icons
+                                                                  .local_parking_rounded,
+                                                        color: isSelected
+                                                            ? Colors.white
+                                                            : isIneligible
+                                                            ? colors
+                                                                  .onSurfaceVariant
+                                                            : Colors.white,
+                                                        size: 25,
+                                                      ),
+                                                    ),
+                                                    ClipPath(
+                                                      clipper:
+                                                          const _PinTipClipper(),
+                                                      child: Container(
+                                                        width: 16,
+                                                        height: 16,
+                                                        color: isIneligible
+                                                            ? colors
+                                                                  .onSurfaceVariant
+                                                            : markerColor,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                ClipPath(
-                                                  clipper:
-                                                      const _PinTipClipper(),
-                                                  child: Container(
-                                                    width: 16,
-                                                    height: 16,
-                                                    color: isIneligible
-                                                        ? colors
-                                                              .onSurfaceVariant
-                                                        : markerColor,
-                                                  ),
-                                                ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
