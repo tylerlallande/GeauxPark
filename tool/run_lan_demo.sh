@@ -83,4 +83,5 @@ flutter run \
   --web-hostname 0.0.0.0 \
   --web-port "$demo_port" \
   --dart-define="GEAUXPARK_API_URL=$demo_api_url" \
+  --dart-define=GEAUXPARK_ALLOW_INSECURE_DEVELOPMENT_API=true \
   -t lib/main.dart

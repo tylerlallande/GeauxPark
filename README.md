@@ -156,8 +156,13 @@ flutter run -d web-server \
   --web-hostname 0.0.0.0 \
   --web-port 8081 \
   --dart-define=GEAUXPARK_API_URL=http://<mac-ip-address>:8080 \
+  --dart-define=GEAUXPARK_ALLOW_INSECURE_DEVELOPMENT_API=true \
   -t lib/main.dart
 ```
+
+Production API configuration accepts HTTPS only. The insecure-development flag
+is reserved for the local classroom demo and permits HTTP only for loopback or
+private local-network addresses; it does not allow public HTTP API hosts.
 
 Find the Mac's Wi-Fi address:
 
