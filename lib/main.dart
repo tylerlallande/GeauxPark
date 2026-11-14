@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
+import 'config/parking_api_config.dart';
 import 'repositories/api_parking_repository.dart';
 import 'repositories/demo_parking_repository.dart';
 import 'repositories/parking_repository.dart';
@@ -31,10 +32,14 @@ class GeauxParkApp extends StatelessWidget {
 
 ParkingRepository _createParkingRepository() {
   const apiUrl = String.fromEnvironment('GEAUXPARK_API_URL');
+  const allowInsecureDevelopmentApi = bool.fromEnvironment(
+    'GEAUXPARK_ALLOW_INSECURE_DEVELOPMENT_API',
+  );
   const fallback = DemoParkingRepository();
-  final baseUri = Uri.tryParse(apiUrl);
-  if (baseUri == null || !baseUri.hasScheme || !baseUri.hasAuthority) {
-    return fallback;
-  }
+  final baseUri = parseParkingApiBaseUri(
+    apiUrl,
+    allowInsecureDevelopmentApi: allowInsecureDevelopmentApi,
+  );
+  if (baseUri == null) return fallback;
   return ApiParkingRepository(baseUri: baseUri, fallback: fallback);
 }
