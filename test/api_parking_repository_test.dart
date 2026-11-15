@@ -54,12 +54,27 @@ void main() {
     final repository = ApiParkingRepository(
       baseUri: Uri.parse('http://localhost:8080'),
       fallback: const _FallbackRepository(),
-      client: MockClient((request) async => throw Exception('offline')),
+      client: MockClient(
+        (request) async => throw http.ClientException('offline', request.url),
+      ),
     );
 
     final details = await repository.fetchParkingDetails('fallback-lot');
 
     expect(details?.description, 'Fallback data');
+  });
+
+  test('does not hide unexpected programming errors', () async {
+    final repository = ApiParkingRepository(
+      baseUri: Uri.parse('https://parking.example.edu'),
+      fallback: const _FallbackRepository(),
+      client: MockClient((request) async => throw StateError('unexpected')),
+    );
+
+    await expectLater(
+      repository.fetchParkingLots(),
+      throwsA(isA<StateError>()),
+    );
   });
 }
 

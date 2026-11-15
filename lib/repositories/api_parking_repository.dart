@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import '../models/parking_details.dart';
 import '../models/parking_lot.dart';
+import '../utils/app_diagnostics.dart';
 import 'parking_repository.dart';
 
 /// Loads parking details from the GeauxPark server and keeps the demo usable
@@ -48,8 +50,14 @@ class ApiParkingRepository implements ParkingRepository {
         );
       }
       return lots;
-    } catch (_) {
-      return fallback.fetchParkingLots();
+    } on TimeoutException catch (error, stackTrace) {
+      return _fallbackParkingLots(error, stackTrace);
+    } on http.ClientException catch (error, stackTrace) {
+      return _fallbackParkingLots(error, stackTrace);
+    } on FormatException catch (error, stackTrace) {
+      return _fallbackParkingLots(error, stackTrace);
+    } on ParkingRepositoryException catch (error, stackTrace) {
+      return _fallbackParkingLots(error, stackTrace);
     }
   }
 
@@ -78,10 +86,31 @@ class ApiParkingRepository implements ParkingRepository {
       // uses `lotId` so it can remain independent from the transport format.
       payload['lotId'] ??= payload['id'] ?? lotId;
       return ParkingDetails.fromJson(payload);
-    } catch (_) {
-      // An offline fallback keeps the classroom demo functional if the API or
-      // campus network is temporarily unavailable.
-      return fallback.fetchParkingDetails(lotId);
+    } on TimeoutException catch (error, stackTrace) {
+      return _fallbackParkingDetails(lotId, error, stackTrace);
+    } on http.ClientException catch (error, stackTrace) {
+      return _fallbackParkingDetails(lotId, error, stackTrace);
+    } on FormatException catch (error, stackTrace) {
+      return _fallbackParkingDetails(lotId, error, stackTrace);
+    } on ParkingRepositoryException catch (error, stackTrace) {
+      return _fallbackParkingDetails(lotId, error, stackTrace);
     }
+  }
+
+  Future<List<ParkingLot>> _fallbackParkingLots(
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    recordAppError('Parking catalog API unavailable', error, stackTrace);
+    return fallback.fetchParkingLots();
+  }
+
+  Future<ParkingDetails?> _fallbackParkingDetails(
+    String lotId,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    recordAppError('Parking details API unavailable', error, stackTrace);
+    return fallback.fetchParkingDetails(lotId);
   }
 }
