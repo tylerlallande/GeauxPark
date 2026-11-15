@@ -10,6 +10,7 @@ import '../models/parking_availability.dart';
 import '../repositories/parking_repository.dart';
 import '../services/directions_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/app_diagnostics.dart';
 import '../widgets/road_routing_consent.dart';
 import '../widgets/availability_indicator.dart';
 import '../widgets/loading_skeleton.dart';
@@ -176,12 +177,20 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     final callback = widget.onToggleSaved;
     if (callback == null || _isSaving) return;
     setState(() => _isSaving = true);
-    final succeeded = await callback(widget.lot);
-    if (!mounted) return;
-    setState(() {
-      if (succeeded) _isSaved = !_isSaved;
-      _isSaving = false;
-    });
+    try {
+      final succeeded = await callback(widget.lot);
+      if (!mounted) return;
+      if (succeeded) {
+        setState(() => _isSaved = !_isSaved);
+      } else {
+        _showActionError('Could not update saved parking. Please try again.');
+      }
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to update saved parking', error, stackTrace);
+      _showActionError('Could not update saved parking. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Future<void> _reportAvailability() async {
@@ -194,18 +203,41 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     );
     if (!mounted || status == null) return;
     setState(() => _isReportingAvailability = true);
-    final succeeded = await callback(widget.lot, status);
-    if (!mounted) return;
-    setState(() {
+    try {
+      final succeeded = await callback(widget.lot, status);
+      if (!mounted) return;
       if (succeeded) {
-        _occupancyReport = OccupancyReport(
-          lotId: widget.lot.id,
-          status: status,
-          reportedAt: DateTime.now(),
+        setState(() {
+          _occupancyReport = OccupancyReport(
+            lotId: widget.lot.id,
+            status: status,
+            reportedAt: DateTime.now(),
+          );
+        });
+      } else {
+        _showActionError(
+          'Could not save the availability report. Please try again.',
         );
       }
-      _isReportingAvailability = false;
-    });
+    } on Object catch (error, stackTrace) {
+      recordAppError(
+        'Failed to report parking availability',
+        error,
+        stackTrace,
+      );
+      _showActionError(
+        'Could not save the availability report. Please try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _isReportingAvailability = false);
+    }
+  }
+
+  void _showActionError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

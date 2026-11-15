@@ -11,6 +11,7 @@ import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
 import '../theme/app_theme.dart';
+import '../utils/app_diagnostics.dart';
 import '../widgets/parking_lot_tags.dart';
 import '../widgets/road_routing_consent.dart';
 import '../widgets/availability_indicator.dart';
@@ -739,10 +740,13 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             ),
           ).listen(
             _updateUserLocation,
-            onError: (Object error) {
+            onError: (Object error, StackTrace stackTrace) {
+              recordAppError('Live location stream stopped', error, stackTrace);
               if (!mounted) return;
               setState(() => _isTrackingLocation = false);
-              _showLocationMessage('Live location stopped: $error');
+              _showLocationMessage(
+                'Live location stopped. Check location access and try again.',
+              );
             },
             cancelOnError: true,
           );

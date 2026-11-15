@@ -41,6 +41,7 @@ class _FakeLocationPlatform extends GeolocatorPlatform {
   bool enabled = true;
   LocationPermission permission = LocationPermission.denied;
   LocationPermission granted = LocationPermission.whileInUse;
+  Object? streamError;
   int requests = 0;
   LocationSettings? settings;
   @override
@@ -70,6 +71,14 @@ class _FakeLocationPlatform extends GeolocatorPlatform {
       speed: 0,
       speedAccuracy: 0,
     );
+  }
+
+  @override
+  Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
+    final error = streamError;
+    return error == null
+        ? const Stream<Position>.empty()
+        : Stream<Position>.error(error);
   }
 }
 
@@ -226,5 +235,29 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('directions-driving')));
     await pumpMap(tester);
     expect(find.byKey(const ValueKey('directions-driving')), findsNothing);
+  });
+
+  testWidgets('live location errors use a safe message and allow retry', (
+    tester,
+  ) async {
+    final original = GeolocatorPlatform.instance;
+    addTearDown(() => GeolocatorPlatform.instance = original);
+    final locationPlatform = _FakeLocationPlatform()
+      ..streamError = StateError('private platform implementation details');
+    GeolocatorPlatform.instance = locationPlatform;
+
+    await showMap(tester, _FakeDirections());
+    await tester.tap(find.byTooltip('Use my live location'));
+    await pumpMap(tester);
+
+    expect(
+      find.text('Live location stopped. Check location access and try again.'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('private platform implementation details'),
+      findsNothing,
+    );
+    expect(find.byTooltip('Use my live location'), findsOneWidget);
   });
 }

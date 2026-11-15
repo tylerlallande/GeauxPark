@@ -376,6 +376,84 @@ void main() {
     expect(find.text('Could not load Test Garage'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
+
+  testWidgets('failed save recovers and can be retried', (tester) async {
+    var attempts = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParkingDetailsScreen(
+          lot: _testLot,
+          repository: const _FakeParkingRepository(),
+          initiallySaved: false,
+          onToggleSaved: (_) async {
+            attempts++;
+            throw StateError('storage implementation details');
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Save parking'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Could not update saved parking. Please try again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('storage implementation details'), findsNothing);
+    expect(find.byTooltip('Save parking'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Save parking'));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+  });
+
+  testWidgets('failed availability report recovers and can be retried', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var attempts = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParkingDetailsScreen(
+          lot: _testLot,
+          repository: const _FakeParkingRepository(),
+          initiallySaved: false,
+          onReportAvailability: (_, _) async {
+            attempts++;
+            throw StateError('report implementation details');
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    Future<void> submitReport() async {
+      await tester.tap(
+        find.byKey(const ValueKey('details-report-availability')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('report-availability-filling-up')),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await submitReport();
+    expect(
+      find.text('Could not save the availability report. Please try again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('report implementation details'), findsNothing);
+    expect(find.text('Report availability'), findsOneWidget);
+
+    await submitReport();
+    expect(attempts, 2);
+  });
 }
 
 const _testLot = ParkingLot(
