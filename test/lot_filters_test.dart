@@ -2,11 +2,75 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/models/parking_lot.dart';
+import 'package:geauxpark/models/parking_availability.dart';
 import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/screens/home_screen.dart';
 import 'package:geauxpark/widgets/parking_lot_card.dart';
 
 void main() {
+  testWidgets('Available now follows reports and updates while active', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2500);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final availableLot = sampleParkingLots.firstWhere((lot) => lot.isAvailable);
+    final unknownLot = sampleParkingLots.firstWhere(
+      (lot) => lot.spacesAvailable == null,
+    );
+    Future<void> render(Map<String, OccupancyReport> reports) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HomeScreen(
+              lots: [availableLot, unknownLot],
+              savedLotIds: const {},
+              selectedPermits: const {},
+              onToggleSaved: null,
+              onLotSelected: (_) {},
+              occupancyReports: reports,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    List<String> visibleIds() => tester
+        .widgetList<ParkingLotCard>(find.byType(ParkingLotCard))
+        .map((card) => card.lot.id)
+        .toList();
+    await render({});
+    await tester.tap(find.byKey(const ValueKey('quick-filter-available')));
+    await tester.pumpAndSettle();
+    expect(visibleIds(), [availableLot.id]);
+
+    for (final status in ParkingAvailabilityStatus.values) {
+      await render({
+        availableLot.id: OccupancyReport(
+          lotId: availableLot.id,
+          status: ParkingAvailabilityStatus.full,
+          reportedAt: DateTime.utc(2026, 11, 15),
+        ),
+        unknownLot.id: OccupancyReport(
+          lotId: unknownLot.id,
+          status: status,
+          reportedAt: DateTime.utc(2026, 11, 15),
+        ),
+      });
+      expect(
+        visibleIds(),
+        status == ParkingAvailabilityStatus.available
+            ? [unknownLot.id]
+            : isEmpty,
+        reason: 'Reported ${status.label} must determine filter membership',
+      );
+    }
+    await render({});
+    expect(visibleIds(), [availableLot.id]);
+  });
+
   testWidgets(
     'Home puts unowned permits last and updates when permits change',
     (tester) async {

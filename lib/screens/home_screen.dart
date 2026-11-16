@@ -62,7 +62,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ParkingFilter.myPermits =>
             lot.eligibilityFor(widget.selectedPermits) !=
                 PermitEligibility.ineligible,
-          ParkingFilter.available => lot.isAvailable,
+          ParkingFilter.available =>
+            (widget.occupancyReports[lot.id]?.status ??
+                    lot.availabilityStatus) ==
+                ParkingAvailabilityStatus.available,
           ParkingFilter.free => lot.priceLabel.toLowerCase().contains('free'),
           ParkingFilter.accessible => lot.isAccessible == true,
         },
