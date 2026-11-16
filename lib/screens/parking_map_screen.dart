@@ -638,6 +638,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   Future<void> _getDirections() async {
     if (_isGettingDirections || _isLocating) return;
+    final requestId = ++_routeRequestId;
+    bool isCurrent() => mounted && requestId == _routeRequestId;
     final lot = _selectedLot;
     final destination = _lotLocations[lot.id];
     if (destination == null) {
@@ -649,23 +651,25 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     try {
       // Always request a fresh position, even if live tracking has been stopped.
       final origin = await widget.directionsService.currentLocation();
-      if (!mounted) return;
-      if (!await confirmRoadRoutingConsent(context) || !mounted) return;
+      if (!isCurrent()) return;
+      if (!await confirmRoadRoutingConsent(context) || !isCurrent()) return;
       setState(() {
         _userLocation = origin;
         _showRoute = true;
         _roadRoute = null;
         _routeError = null;
       });
-      await _fetchRoadRoute(origin, destination);
+      await _fetchRoadRoute(origin, destination, requestId: requestId);
     } on DirectionsException catch (error) {
-      _showDirectionsError(error.message);
+      if (isCurrent()) _showDirectionsError(error.message);
     } catch (_) {
-      _showDirectionsError(
-        'Could not get your location. Check location access and try again.',
-      );
+      if (isCurrent()) {
+        _showDirectionsError(
+          'Could not get your location. Check location access and try again.',
+        );
+      }
     } finally {
-      if (mounted) {
+      if (isCurrent()) {
         setState(() {
           _isGettingDirections = false;
         });
@@ -673,9 +677,13 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     }
   }
 
-  Future<void> _fetchRoadRoute(LatLng origin, LatLng destination) async {
-    final requestId = ++_routeRequestId;
-    bool isCurrent() => mounted && requestId == _routeRequestId;
+  Future<void> _fetchRoadRoute(
+    LatLng origin,
+    LatLng destination, {
+    int? requestId,
+  }) async {
+    final activeRequestId = requestId ?? ++_routeRequestId;
+    bool isCurrent() => mounted && activeRequestId == _routeRequestId;
     try {
       final route = await widget.roadRoutingService.drivingRoute(
         origin: origin,

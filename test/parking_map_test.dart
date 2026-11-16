@@ -12,6 +12,7 @@ import 'package:geauxpark/data/sample_parking_details.dart';
 import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/screens/parking_map_screen.dart';
 import 'package:geauxpark/services/road_routing_service.dart';
+import 'package:geauxpark/services/directions_service.dart';
 import 'package:latlong2/latlong.dart';
 
 class _PendingRoadRouting extends RoadRoutingService {
@@ -24,7 +25,91 @@ class _PendingRoadRouting extends RoadRoutingService {
   }) => result.future;
 }
 
+class _FailedRoadRouting extends RoadRoutingService {
+  int requests = 0;
+
+  @override
+  Future<RoadRoute> drivingRoute({
+    required LatLng origin,
+    required LatLng destination,
+  }) async {
+    requests++;
+    throw const RoadRoutingException('Route unavailable');
+  }
+}
+
+class _PendingLocation extends DirectionsService {
+  final result = Completer<LatLng>();
+
+  @override
+  Future<LatLng> currentLocation() => result.future;
+}
+
 void main() {
+  for (final fails in [false, true]) {
+    testWidgets('switching pins cancels a location retry (fails: $fails)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final routing = _FailedRoadRouting();
+      final location = _PendingLocation();
+      Widget screen({String? lotId}) => MaterialApp(
+        home: Scaffold(
+          body: ParkingMapScreen(
+            lots: sampleParkingLots,
+            savedLotIds: const {},
+            selectedPermits: const {},
+            onLotSelected: (_) {},
+            roadRoutingService: routing,
+            directionsService: location,
+            directionsLotId: lotId,
+            directionsOrigin: const LatLng(30.412, -91.181),
+          ),
+        ),
+      );
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(screen(lotId: 'union-square-garage'));
+      await tester.pumpAndSettle();
+      expect(find.text('Route unavailable'), findsOneWidget);
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+
+      final gateway = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            (widget.properties.label?.contains('Nicholson Gateway') ?? false),
+      );
+      Focus.of(tester.element(gateway)).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      if (fails) {
+        location.result.completeError(const DirectionsException('Old failure'));
+      } else {
+        location.result.complete(const LatLng(30.412, -91.181));
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('Nicholson Gateway'), findsOneWidget);
+      expect(find.text('Explore parking near LSU'), findsOneWidget);
+      expect(find.text('Calculate driving directions?'), findsNothing);
+      expect(find.text('Old failure'), findsNothing);
+      expect(find.text('Route unavailable'), findsNothing);
+      expect(routing.requests, 1);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('map-get-directions')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+    });
+  }
+
   testWidgets('map markers expose labels and support keyboard selection', (
     tester,
   ) async {
