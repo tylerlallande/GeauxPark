@@ -651,7 +651,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     try {
       // Always request a fresh position, even if live tracking has been stopped.
       final origin = await widget.directionsService.currentLocation();
-      if (!isCurrent()) return;
+      if (!mounted || !isCurrent()) return;
       if (!await confirmRoadRoutingConsent(context) || !isCurrent()) return;
       setState(() {
         _userLocation = origin;
