@@ -456,7 +456,7 @@ void main() {
   });
 }
 
-const _testLot = ParkingLot(
+final _testLot = ParkingLot(
   id: 'test-garage',
   name: 'Test Garage',
   address: '100 Test Street',
@@ -489,7 +489,7 @@ class _CatalogRepository implements ParkingRepository {
   const _CatalogRepository();
 
   @override
-  Future<List<ParkingLot>> fetchParkingLots() async => const [_serverLot];
+  Future<List<ParkingLot>> fetchParkingLots() async => [_serverLot];
 
   @override
   Future<ParkingDetails?> fetchParkingDetails(String lotId) async {
@@ -502,7 +502,7 @@ class _CatalogRepository implements ParkingRepository {
   }
 }
 
-const _serverLot = ParkingLot(
+final _serverLot = ParkingLot(
   id: 'server-test-lot',
   name: 'Server Test Lot',
   address: 'LSU campus',

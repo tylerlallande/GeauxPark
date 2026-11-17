@@ -68,8 +68,10 @@ Future<ParkingAvailabilityStatus?> showAvailabilityReportSheet(
   ParkingAvailabilityStatus? currentStatus,
 }) => showModalBottomSheet<ParkingAvailabilityStatus>(
   context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
   showDragHandle: true,
-  builder: (context) => SafeArea(
+  builder: (context) => SingleChildScrollView(
     child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       child: Column(

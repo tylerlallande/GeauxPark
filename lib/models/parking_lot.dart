@@ -18,7 +18,35 @@ enum ParkingTag {
 }
 
 class ParkingLot {
-  const ParkingLot({
+  factory ParkingLot({
+    required String id,
+    required String name,
+    required String address,
+    required double distanceMiles,
+    required String priceLabel,
+    required int? spacesAvailable,
+    required bool? isAccessible,
+    required Set<ParkingPermit> permitTypes,
+    String? distanceReference,
+    Set<ParkingTag> extraTags = const {},
+    double? latitude,
+    double? longitude,
+  }) => ParkingLot._(
+    id: id,
+    name: name,
+    address: address,
+    distanceMiles: distanceMiles,
+    priceLabel: priceLabel,
+    spacesAvailable: spacesAvailable,
+    isAccessible: isAccessible,
+    permitTypes: Set<ParkingPermit>.unmodifiable(permitTypes),
+    distanceReference: distanceReference,
+    extraTags: Set<ParkingTag>.unmodifiable(extraTags),
+    latitude: latitude,
+    longitude: longitude,
+  );
+
+  const ParkingLot._({
     required this.id,
     required this.name,
     required this.address,
@@ -27,10 +55,10 @@ class ParkingLot {
     required this.spacesAvailable,
     required this.isAccessible,
     required this.permitTypes,
-    this.distanceReference,
-    this.extraTags = const {},
-    this.latitude,
-    this.longitude,
+    required this.distanceReference,
+    required this.extraTags,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory ParkingLot.fromJson(Map<String, dynamic> json) {

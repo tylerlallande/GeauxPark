@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
@@ -6,9 +9,30 @@ import 'repositories/api_parking_repository.dart';
 import 'repositories/demo_parking_repository.dart';
 import 'repositories/parking_repository.dart';
 import 'theme/app_theme.dart';
+import 'utils/app_diagnostics.dart';
 
 void main() {
-  runApp(GeauxParkApp(parkingRepository: _createParkingRepository()));
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      FlutterError.onError = (details) {
+        recordAppError(
+          'Unhandled Flutter framework error',
+          details.exception,
+          details.stack ?? StackTrace.current,
+        );
+        FlutterError.presentError(details);
+      };
+      PlatformDispatcher.instance.onError = (error, stackTrace) {
+        recordAppError('Unhandled asynchronous error', error, stackTrace);
+        return true;
+      };
+      runApp(GeauxParkApp(parkingRepository: _createParkingRepository()));
+    },
+    (error, stackTrace) {
+      recordAppError('Unhandled application-zone error', error, stackTrace);
+    },
+  );
 }
 
 class GeauxParkApp extends StatelessWidget {

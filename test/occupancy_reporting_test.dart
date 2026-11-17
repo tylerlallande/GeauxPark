@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/main.dart';
 import 'package:geauxpark/models/parking_availability.dart';
 import 'package:geauxpark/repositories/local_occupancy_report_repository.dart';
+import 'package:geauxpark/widgets/availability_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -114,5 +115,40 @@ void main() {
     final decoration = marker.decoration! as BoxDecoration;
     expect(decoration.color, const Color(0xFFE66A21));
     expect(find.textContaining('Very busy · Reported'), findsOneWidget);
+  });
+
+  testWidgets('availability reporting fits and scrolls on a small phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => FilledButton(
+              onPressed: () => showAvailabilityReportSheet(
+                context,
+                lotName: 'Small Screen Lot',
+              ),
+              child: const Text('Report availability'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Report availability'));
+    await tester.pumpAndSettle();
+    expect(find.text('How busy is Small Screen Lot?'), findsOneWidget);
+
+    final fullOption = find.byKey(const ValueKey('report-availability-full'));
+    await tester.ensureVisible(fullOption);
+    await tester.pumpAndSettle();
+    expect(fullOption, findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

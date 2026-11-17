@@ -621,7 +621,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       );
     } on DirectionsException catch (error) {
       _showDirectionsError(error.message, onRetry: _openExternalDirections);
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to open external directions', error, stackTrace);
       _showDirectionsError(
         'Could not get your location. Check location access and try again.',
         onRetry: _openExternalDirections,
@@ -662,7 +663,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       await _fetchRoadRoute(origin, destination, requestId: requestId);
     } on DirectionsException catch (error) {
       if (isCurrent()) _showDirectionsError(error.message);
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to get map directions', error, stackTrace);
       if (isCurrent()) {
         _showDirectionsError(
           'Could not get your location. Check location access and try again.',
@@ -703,7 +705,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       );
     } on RoadRoutingException catch (error) {
       if (isCurrent()) setState(() => _routeError = error.message);
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to load road route', error, stackTrace);
       if (isCurrent()) {
         setState(
           () => _routeError = 'Could not load road directions. Check your connection and try again.',
@@ -761,7 +764,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       if (mounted) setState(() => _isTrackingLocation = true);
     } on DirectionsException catch (error) {
       _showLocationMessage(error.message);
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to start live location', error, stackTrace);
       _showLocationMessage(
         'Could not get your location. Check your location permission and try again.',
       );
@@ -834,7 +838,8 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
           () => _error = 'Could not open Google Maps. Please try again.',
         );
       }
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to launch Google Maps', error, stackTrace);
       if (mounted) {
         setState(
           () => _error = 'Could not open Google Maps. Please try again.',

@@ -94,7 +94,12 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     } on DirectionsException catch (error) {
       if (mounted) setState(() => _locationMessage = error.message);
       return null;
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError(
+        'Failed to get location for parking details',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         setState(
           () => _locationMessage =
