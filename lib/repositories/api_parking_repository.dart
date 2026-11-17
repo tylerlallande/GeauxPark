@@ -35,14 +35,14 @@ class ApiParkingRepository implements ParkingRepository {
         );
       }
       final decoded = jsonDecode(response.body);
-      if (decoded is! Map || decoded['lots'] is! List) {
+      if (decoded is! Map<String, dynamic> || decoded['lots'] is! List) {
         throw const ParkingRepositoryException(
           'Server returned an invalid parking catalog.',
         );
       }
       final lots = (decoded['lots'] as List<dynamic>)
-          .whereType<Map>()
-          .map((item) => ParkingLot.fromJson(Map<String, dynamic>.from(item)))
+          .whereType<Map<String, dynamic>>()
+          .map(ParkingLot.fromJson)
           .toList(growable: false);
       if (lots.isEmpty) {
         throw const ParkingRepositoryException(

@@ -17,6 +17,7 @@ import 'screens/parking_details_screen.dart';
 import 'screens/parking_map_screen.dart';
 import 'screens/permit_preferences_screen.dart';
 import 'screens/saved_screen.dart';
+import 'utils/app_diagnostics.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -62,7 +63,8 @@ class _AppShellState extends State<AppShell> {
       final lots = await widget.parkingRepository.fetchParkingLots();
       if (!mounted || lots.isEmpty) return;
       setState(() => _parkingLots = lots);
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to load parking catalog', error, stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -90,7 +92,8 @@ class _AppShellState extends State<AppShell> {
         _selectedPermits = permits;
         _occupancyReports = reports;
       });
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to load local app state', error, stackTrace);
       if (!mounted) return;
       setState(() => _loadFailed = true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -115,7 +118,8 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return false;
       setState(() => _selectedPermits = {...permits});
       return true;
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to update parking permits', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -144,7 +148,8 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return false;
       setState(() => _savedLotIds = nextIds);
       return true;
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to update saved parking', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -182,7 +187,8 @@ class _AppShellState extends State<AppShell> {
         SnackBar(content: Text('${lot.name} reported as ${status.label}.')),
       );
       return true;
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      recordAppError('Failed to save availability report', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
