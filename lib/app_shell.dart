@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/sample_game_day.dart';
 import 'data/sample_parking_lots.dart';
+import 'l10n/app_localizations.dart';
 import 'models/parking_lot.dart';
 import 'models/parking_details.dart';
 import 'models/parking_permit.dart';
@@ -32,6 +33,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  static const _tabCount = 4;
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
   static const _savedLotsKey = 'saved_parking_lot_ids';
@@ -267,8 +269,8 @@ class _AppShellState extends State<AppShell> {
     if (!isDeliberateHorizontalSwipe) return;
 
     final nextIndex = delta.dx < 0
-        ? (_selectedIndex + 1).clamp(0, _destinations.length - 1)
-        : (_selectedIndex - 1).clamp(0, _destinations.length - 1);
+        ? (_selectedIndex + 1).clamp(0, _tabCount - 1)
+        : (_selectedIndex - 1).clamp(0, _tabCount - 1);
     _selectTab(nextIndex);
   }
 
@@ -322,31 +324,33 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  static const _destinations = <NavigationDestination>[
+  List<NavigationDestination> _destinations(AppLocalizations strings) => [
     NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home_rounded),
-      label: 'Home',
+      icon: const Icon(Icons.home_outlined),
+      selectedIcon: const Icon(Icons.home_rounded),
+      label: strings.homeTab,
     ),
     NavigationDestination(
-      icon: Icon(Icons.map_outlined),
-      selectedIcon: Icon(Icons.map_rounded),
-      label: 'Map',
+      icon: const Icon(Icons.map_outlined),
+      selectedIcon: const Icon(Icons.map_rounded),
+      label: strings.mapTab,
     ),
     NavigationDestination(
-      icon: Icon(Icons.bookmark_border_rounded),
-      selectedIcon: Icon(Icons.bookmark_rounded),
-      label: 'Saved',
+      icon: const Icon(Icons.bookmark_border_rounded),
+      selectedIcon: const Icon(Icons.bookmark_rounded),
+      label: strings.savedTab,
     ),
     NavigationDestination(
-      icon: Icon(Icons.person_outline_rounded),
-      selectedIcon: Icon(Icons.person_rounded),
-      label: 'Profile',
+      icon: const Icon(Icons.person_outline_rounded),
+      selectedIcon: const Icon(Icons.person_rounded),
+      label: strings.profileTab,
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final destinations = _destinations(strings);
     final screens = <Widget>[
       HomeScreen(
         lots: _parkingLots,
@@ -410,7 +414,7 @@ class _AppShellState extends State<AppShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        destinations: _destinations,
+        destinations: destinations,
         onDestinationSelected: _selectTab,
       ),
     );

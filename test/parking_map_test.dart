@@ -229,7 +229,9 @@ void main() {
         } else {
           await tester.pump(const Duration(milliseconds: 100));
         }
-        final layer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+        final layer = tester.widget<MarkerLayer>(
+          find.byType(MarkerLayer).first,
+        );
         final gateway = layer.markers.singleWhere(
           (marker) =>
               marker.key == const ValueKey('parking-marker-nicholson-gateway'),
@@ -270,7 +272,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final markerLayer = find.byType(MarkerLayer);
+    final markerLayer = find.byType(MarkerLayer).first;
     final filterScroll = find.descendant(
       of: find.byKey(const ValueKey('map-lot-type-filters')),
       matching: find.byType(Scrollable),
@@ -365,7 +367,7 @@ void main() {
     final controller = tester.widget<FlutterMap>(mapFinder).mapController!;
 
     void expectPinTipsOnCoordinates() {
-      final layer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+      final layer = tester.widget<MarkerLayer>(find.byType(MarkerLayer).first);
       expect(layer.markers.length, sampleParkingLots.length);
       final mapOrigin = tester.getTopLeft(mapFinder);
       for (final marker in layer.markers) {
@@ -391,7 +393,7 @@ void main() {
     // The expanded campus catalog overlaps when zoomed out. Zoom in before
     // selecting a specific lot, as a user would when inspecting that area.
     final gateway = tester
-        .widget<MarkerLayer>(find.byType(MarkerLayer))
+        .widget<MarkerLayer>(find.byType(MarkerLayer).first)
         .markers
         .singleWhere(
           (marker) =>
