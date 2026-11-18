@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_shell.dart';
 import 'config/parking_api_config.dart';
+import 'l10n/app_localizations.dart';
 import 'repositories/api_parking_repository.dart';
 import 'repositories/demo_parking_repository.dart';
 import 'repositories/parking_repository.dart';
@@ -46,9 +48,16 @@ class GeauxParkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GeauxPark',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: AppShell(parkingRepository: parkingRepository),
     );
   }

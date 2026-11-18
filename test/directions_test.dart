@@ -166,7 +166,7 @@ void main() {
       final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
       const markerKey = ValueKey('parking-marker-bernie-moore-104');
       final marker = tester
-          .widget<MarkerLayer>(find.byType(MarkerLayer))
+          .widget<MarkerLayer>(find.byType(MarkerLayer).first)
           .markers
           .singleWhere((marker) => marker.key == markerKey);
       map.mapController!.move(marker.point, 18);

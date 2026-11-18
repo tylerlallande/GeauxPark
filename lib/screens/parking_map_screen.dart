@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
-import '../data/parking_locations.dart';
+import '../l10n/app_localizations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
@@ -16,6 +16,7 @@ import '../widgets/parking_lot_tags.dart';
 import '../widgets/road_routing_consent.dart';
 import '../widgets/availability_indicator.dart';
 import '../services/directions_service.dart';
+import '../services/parking_map_catalog.dart';
 import '../services/road_routing_service.dart';
 
 class ParkingMapScreen extends StatefulWidget {
@@ -52,7 +53,8 @@ class ParkingMapScreen extends StatefulWidget {
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final MapController _mapController = MapController();
   StreamSubscription<Position>? _positionSubscription;
-  LatLng? _userLocation;
+  final ValueNotifier<LatLng?> _userLocation = ValueNotifier(null);
+  late ParkingMapCatalog _catalog;
   bool _isLocating = false;
   bool _isTrackingLocation = false;
   bool _isGettingDirections = false;
@@ -78,12 +80,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     });
   }
 
-  List<ParkingLot> _matchingLots(Set<ParkingTag> tags) => widget.lots
-      .where((lot) => tags.isEmpty || lot.tags.any(tags.contains))
-      .toList();
-
   void _applyTags(Set<ParkingTag> tags) {
-    final matches = _matchingLots(tags);
+    final matches = _catalog.matching(tags);
     setState(() {
       _selectedTags = tags;
       if (!matches.contains(_selectedLot)) {
@@ -95,34 +93,19 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     });
   }
 
-  Map<String, LatLng> get _lotLocations {
-    final locations = <String, LatLng>{};
-    for (final lot in widget.lots) {
-      final location = _locationFor(lot);
-      if (location != null) locations[lot.id] = location;
-    }
-    return locations;
-  }
-
-  LatLng? _locationFor(ParkingLot lot) {
-    if (lot.latitude != null && lot.longitude != null) {
-      return LatLng(lot.latitude!, lot.longitude!);
-    }
-    final fallback = parkingLocations[lot.id];
-    return fallback == null
-        ? null
-        : LatLng(fallback.latitude, fallback.longitude);
-  }
-
   @override
   void initState() {
     super.initState();
+    _catalog = ParkingMapCatalog(widget.lots);
     _selectedLot = widget.lots.first;
   }
 
   @override
   void didUpdateWidget(covariant ParkingMapScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(widget.lots, oldWidget.lots)) {
+      _catalog = ParkingMapCatalog(widget.lots);
+    }
     if (!widget.lots.any((lot) => lot.id == _selectedLot.id)) {
       _selectedLot = widget.lots.first;
     }
@@ -138,7 +121,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final lot = widget.lots[lotIndex];
     final origin = widget.directionsOrigin;
     if (origin == null) return;
-    final destination = _lotLocations[lot.id];
+    final destination = _catalog.locations[lot.id];
     if (destination == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -147,7 +130,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         if (_selectedTags.isNotEmpty && !lot.tags.any(_selectedTags.contains)) {
           _selectedTags = {};
         }
-        _userLocation = origin;
+        _userLocation.value = origin;
         _showRoute = true;
         _roadRoute = null;
         _routeError = null;
@@ -160,7 +143,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final matchingLots = _matchingLots(_selectedTags);
+    final strings = AppLocalizations.of(context);
+    final matchingLots = _catalog.matching(_selectedTags);
     final canFilter = !_isGettingDirections && !_isDirectionsOpen;
 
     return Padding(
@@ -173,12 +157,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Parking map', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            strings.parkingMapTitle,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 6),
           Text(
             _showRoute
-                ? 'Directions to ${_selectedLot.name}'
-                : 'Explore parking near LSU',
+                ? strings.directionsTo(_selectedLot.name)
+                : strings.exploreParkingNearLsu,
             style: Theme.of(context).textTheme.bodyLarge
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
@@ -192,7 +179,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               scrollDirection: Axis.horizontal,
               children: [
                 FilterChip(
-                  label: const Text('All parking'),
+                  label: Text(strings.allParking),
                   visualDensity: VisualDensity.compact,
                   selected: _selectedTags.isEmpty,
                   onSelected: canFilter ? (_) => _applyTags({}) : null,
@@ -235,7 +222,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         // Open with every lot pin fully on screen, clear of the
                         // location and zoom buttons at the top.
                         initialCameraFit: CameraFit.coordinates(
-                          coordinates: _lotLocations.values.toList(),
+                          coordinates: _catalog.locations.values.toList(),
                           padding: const EdgeInsets.fromLTRB(48, 96, 48, 56),
                           maxZoom: 16.5,
                         ),
@@ -264,214 +251,203 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                             ],
                           ),
                         MarkerLayer(
-                          markers:
-                              matchingLots
-                                  .map((lot) {
-                                    final location = _lotLocations[lot.id];
-                                    if (location == null) return null;
-                                    final isSelected =
-                                        lot.id == _selectedLot.id;
-                                    final isFocused = lot.id == _focusedLotId;
-                                    final eligibility = lot.eligibilityFor(
-                                      widget.selectedPermits,
-                                    );
-                                    final isIneligible =
-                                        eligibility ==
-                                        PermitEligibility.ineligible;
-                                    final availability =
-                                        widget
-                                            .occupancyReports[lot.id]
-                                            ?.status ??
-                                        lot.availabilityStatus;
-                                    final markerColor = isIneligible
-                                        ? colors.onSurfaceVariant
-                                        : availabilityColor(
-                                            availability,
-                                            colors,
-                                          );
-                                    final permitStatus = switch (eligibility) {
-                                      PermitEligibility.eligible =>
-                                        'Eligible for your selected permit.',
-                                      PermitEligibility.ineligible => 'Not eligible for your selected permit.',
-                                      PermitEligibility.notConfigured =>
-                                        'Parking permit not configured.',
-                                    };
+                          markers: matchingLots
+                              .map((lot) {
+                                final location = _catalog.locations[lot.id];
+                                if (location == null) return null;
+                                final isSelected = lot.id == _selectedLot.id;
+                                final isFocused = lot.id == _focusedLotId;
+                                final eligibility = lot.eligibilityFor(
+                                  widget.selectedPermits,
+                                );
+                                final isIneligible =
+                                    eligibility == PermitEligibility.ineligible;
+                                final availability =
+                                    widget.occupancyReports[lot.id]?.status ??
+                                    lot.availabilityStatus;
+                                final markerColor = isIneligible
+                                    ? colors.onSurfaceVariant
+                                    : availabilityColor(availability, colors);
+                                final permitStatus = switch (eligibility) {
+                                  PermitEligibility.eligible =>
+                                    'Eligible for your selected permit.',
+                                  PermitEligibility.ineligible =>
+                                    'Not eligible for your selected permit.',
+                                  PermitEligibility.notConfigured =>
+                                    'Parking permit not configured.',
+                                };
 
-                                    return Marker(
-                                      key: ValueKey('parking-marker-${lot.id}'),
-                                      point: location,
-                                      width: 54,
-                                      height: 62,
-                                      // Keep the pin tip on the coordinate at every
-                                      // zoom level and while rotating the map.
-                                      alignment: Alignment.topCenter,
-                                      rotate: true,
-                                      child: Focus(
-                                        onFocusChange: (focused) {
-                                          setState(() {
-                                            if (focused) {
-                                              _focusedLotId = lot.id;
-                                            } else if (_focusedLotId ==
-                                                lot.id) {
-                                              _focusedLotId = null;
-                                            }
-                                          });
-                                        },
-                                        onKeyEvent: (_, event) {
-                                          if (event is! KeyDownEvent ||
-                                              (event.logicalKey !=
-                                                      LogicalKeyboardKey
-                                                          .enter &&
-                                                  event.logicalKey !=
-                                                      LogicalKeyboardKey
-                                                          .numpadEnter &&
-                                                  event.logicalKey !=
-                                                      LogicalKeyboardKey
-                                                          .space)) {
-                                            return KeyEventResult.ignored;
-                                          }
-                                          _selectLot(lot);
-                                          return KeyEventResult.handled;
-                                        },
-                                        child: Semantics(
-                                          excludeSemantics: true,
-                                          button: true,
-                                          selected: isSelected,
-                                          focusable: true,
-                                          focused: isFocused,
-                                          label:
-                                              '${lot.name}. Availability: '
-                                              '${availability.label}. '
-                                              '$permitStatus',
-                                          onTapHint: 'Select parking lot',
-                                          onTap: () => _selectLot(lot),
-                                          child: GestureDetector(
-                                            onTap: () => _selectLot(lot),
-                                            child: AnimatedOpacity(
-                                              duration: const Duration(
-                                                milliseconds: 180,
-                                              ),
-                                              opacity: isIneligible ? 0.42 : 1,
-                                              child: AnimatedScale(
-                                                duration: const Duration(
-                                                  milliseconds: 180,
-                                                ),
-                                                curve: Curves.easeOutBack,
-                                                scale: isSelected ? 1 : 0.88,
-                                                child: Column(
-                                                  children: [
-                                                    Container(
-                                                      key: ValueKey(
-                                                        'parking-marker-density-${lot.id}',
-                                                      ),
-                                                      width: 46,
-                                                      height: 46,
-                                                      decoration: BoxDecoration(
-                                                        color: isSelected
-                                                            ? markerColor
-                                                            : markerColor
-                                                                  .withValues(
-                                                                    alpha: 0.9,
-                                                                  ),
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(
-                                                          color: isFocused
-                                                              ? colors.secondary
-                                                              : isIneligible
-                                                              ? colors
-                                                                    .onSurfaceVariant
-                                                              : isSelected
-                                                              ? colors.primary
-                                                              : colors.surface,
-                                                          width:
-                                                              isSelected ||
-                                                                  isFocused
-                                                              ? 3
-                                                              : 2,
+                                return Marker(
+                                  key: ValueKey('parking-marker-${lot.id}'),
+                                  point: location,
+                                  width: 54,
+                                  height: 62,
+                                  // Keep the pin tip on the coordinate at every
+                                  // zoom level and while rotating the map.
+                                  alignment: Alignment.topCenter,
+                                  rotate: true,
+                                  child: Focus(
+                                    onFocusChange: (focused) {
+                                      setState(() {
+                                        if (focused) {
+                                          _focusedLotId = lot.id;
+                                        } else if (_focusedLotId == lot.id) {
+                                          _focusedLotId = null;
+                                        }
+                                      });
+                                    },
+                                    onKeyEvent: (_, event) {
+                                      if (event is! KeyDownEvent ||
+                                          (event.logicalKey !=
+                                                  LogicalKeyboardKey.enter &&
+                                              event.logicalKey !=
+                                                  LogicalKeyboardKey
+                                                      .numpadEnter &&
+                                              event.logicalKey !=
+                                                  LogicalKeyboardKey.space)) {
+                                        return KeyEventResult.ignored;
+                                      }
+                                      _selectLot(lot);
+                                      return KeyEventResult.handled;
+                                    },
+                                    child: Semantics(
+                                      excludeSemantics: true,
+                                      button: true,
+                                      selected: isSelected,
+                                      focusable: true,
+                                      focused: isFocused,
+                                      label:
+                                          '${lot.name}. Availability: '
+                                          '${availability.label}. '
+                                          '$permitStatus',
+                                      onTapHint: 'Select parking lot',
+                                      onTap: () => _selectLot(lot),
+                                      child: GestureDetector(
+                                        onTap: () => _selectLot(lot),
+                                        child: AnimatedOpacity(
+                                          duration: const Duration(
+                                            milliseconds: 180,
+                                          ),
+                                          opacity: isIneligible ? 0.42 : 1,
+                                          child: AnimatedScale(
+                                            duration: const Duration(
+                                              milliseconds: 180,
+                                            ),
+                                            curve: Curves.easeOutBack,
+                                            scale: isSelected ? 1 : 0.88,
+                                            child: Column(
+                                              children: [
+                                                Container(
+                                                  key: ValueKey(
+                                                    'parking-marker-density-${lot.id}',
+                                                  ),
+                                                  width: 46,
+                                                  height: 46,
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? markerColor
+                                                        : markerColor
+                                                              .withValues(
+                                                                alpha: 0.9,
+                                                              ),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: isFocused
+                                                          ? colors.secondary
+                                                          : isIneligible
+                                                          ? colors
+                                                                .onSurfaceVariant
+                                                          : isSelected
+                                                          ? colors.primary
+                                                          : colors.surface,
+                                                      width:
+                                                          isSelected ||
+                                                              isFocused
+                                                          ? 3
+                                                          : 2,
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: colors.shadow
+                                                            .withValues(
+                                                              alpha: 0.2,
+                                                            ),
+                                                        blurRadius: 8,
+                                                        offset: const Offset(
+                                                          0,
+                                                          3,
                                                         ),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: colors.shadow
-                                                                .withValues(
-                                                                  alpha: 0.2,
-                                                                ),
-                                                            blurRadius: 8,
-                                                            offset:
-                                                                const Offset(
-                                                                  0,
-                                                                  3,
-                                                                ),
-                                                          ),
-                                                        ],
                                                       ),
-                                                      child: Icon(
-                                                        isIneligible
-                                                            ? Icons
-                                                                  .block_rounded
-                                                            : Icons
-                                                                  .local_parking_rounded,
-                                                        color: isSelected
-                                                            ? Colors.white
-                                                            : isIneligible
-                                                            ? colors
-                                                                  .onSurfaceVariant
-                                                            : Colors.white,
-                                                        size: 25,
-                                                      ),
-                                                    ),
-                                                    ClipPath(
-                                                      clipper:
-                                                          const _PinTipClipper(),
-                                                      child: Container(
-                                                        width: 16,
-                                                        height: 16,
-                                                        color: isIneligible
-                                                            ? colors
-                                                                  .onSurfaceVariant
-                                                            : markerColor,
-                                                      ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
+                                                  child: Icon(
+                                                    isIneligible
+                                                        ? Icons.block_rounded
+                                                        : Icons
+                                                              .local_parking_rounded,
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : isIneligible
+                                                        ? colors
+                                                              .onSurfaceVariant
+                                                        : Colors.white,
+                                                    size: 25,
+                                                  ),
                                                 ),
-                                              ),
+                                                ClipPath(
+                                                  clipper:
+                                                      const _PinTipClipper(),
+                                                  child: Container(
+                                                    width: 16,
+                                                    height: 16,
+                                                    color: isIneligible
+                                                        ? colors
+                                                              .onSurfaceVariant
+                                                        : markerColor,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ),
-                                    );
-                                  })
-                                  .whereType<Marker>()
-                                  .toList()
-                                ..addAll(
-                                  _userLocation == null
-                                      ? const []
-                                      : [
-                                          Marker(
-                                            point: _userLocation!,
-                                            width: 34,
-                                            height: 34,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: colors.tertiary,
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: colors.onTertiary,
-                                                  width: 4,
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: colors.shadow
-                                                        .withValues(
-                                                          alpha: 0.27,
-                                                        ),
-                                                    blurRadius: 8,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                    ),
+                                  ),
+                                );
+                              })
+                              .whereType<Marker>()
+                              .toList(growable: false),
+                        ),
+                        ValueListenableBuilder<LatLng?>(
+                          valueListenable: _userLocation,
+                          builder: (context, location, child) => MarkerLayer(
+                            markers: location == null
+                                ? const []
+                                : [
+                                    Marker(
+                                      point: location,
+                                      width: 34,
+                                      height: 34,
+                                      child: child!,
+                                    ),
+                                  ],
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: colors.tertiary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colors.onTertiary,
+                                width: 4,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.shadow.withValues(alpha: 0.27),
+                                  blurRadius: 8,
                                 ),
+                              ],
+                            ),
+                          ),
                         ),
                         RichAttributionWidget(
                           attributions: [
@@ -518,7 +494,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
           const SizedBox(height: 14),
           if (matchingLots.isEmpty)
-            const Text('No parking lots match these tags.')
+            Text(strings.noMatchingParking)
           else ...[
             _SelectedLotCard(
               lot: _selectedLot,
@@ -538,7 +514,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     ? null
                     : _reportSelectedLot,
                 icon: const Icon(Icons.campaign_outlined),
-                label: const Text('Report availability'),
+                label: Text(strings.reportAvailability),
               ),
             ),
             const SizedBox(height: 10),
@@ -558,8 +534,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     : const Icon(Icons.directions_rounded),
                 label: Text(
                   _isGettingDirections
-                      ? 'Getting your location…'
-                      : 'Get directions',
+                      ? strings.gettingLocation
+                      : strings.getDirections,
                 ),
               ),
             ),
@@ -592,7 +568,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   Future<void> _openExternalDirections() async {
     if (_isGettingDirections || _isDirectionsOpen || _isLocating) return;
     final lot = _selectedLot;
-    final destination = _lotLocations[lot.id];
+    final destination = _catalog.locations[lot.id];
     if (destination == null) {
       _showLocationMessage('Directions are unavailable for this lot.');
       return;
@@ -603,7 +579,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       final origin = await widget.directionsService.currentLocation();
       if (!mounted) return;
       setState(() {
-        _userLocation = origin;
+        _userLocation.value = origin;
         _isGettingDirections = false;
         _isDirectionsOpen = true;
       });
@@ -642,7 +618,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final requestId = ++_routeRequestId;
     bool isCurrent() => mounted && requestId == _routeRequestId;
     final lot = _selectedLot;
-    final destination = _lotLocations[lot.id];
+    final destination = _catalog.locations[lot.id];
     if (destination == null) {
       _showLocationMessage('Directions are unavailable for this lot.');
       return;
@@ -655,7 +631,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       if (!mounted || !isCurrent()) return;
       if (!await confirmRoadRoutingConsent(context) || !isCurrent()) return;
       setState(() {
-        _userLocation = origin;
+        _userLocation.value = origin;
         _showRoute = true;
         _roadRoute = null;
         _routeError = null;
@@ -780,7 +756,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   void _updateMapLocation(LatLng location) {
     if (!mounted) return;
-    setState(() => _userLocation = location);
+    _userLocation.value = location;
     _mapController.move(location, _mapController.camera.zoom);
   }
 
@@ -793,6 +769,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   @override
   void dispose() {
     _positionSubscription?.cancel();
+    _userLocation.dispose();
     super.dispose();
   }
 }

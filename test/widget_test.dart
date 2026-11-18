@@ -148,6 +148,15 @@ void main() {
     expect(find.text('Parking map'), findsOneWidget);
   });
 
+  testWidgets('app exposes a localization boundary', (tester) async {
+    await tester.pumpWidget(const GeauxParkApp());
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+
+    expect(app.supportedLocales, contains(const Locale('en')));
+    expect(app.localizationsDelegates, isNotEmpty);
+    expect(app.onGenerateTitle, isNotNull);
+  });
+
   testWidgets('horizontal swipes move between bottom navigation tabs', (
     WidgetTester tester,
   ) async {
