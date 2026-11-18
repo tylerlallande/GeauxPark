@@ -106,9 +106,12 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     if (!identical(widget.lots, oldWidget.lots)) {
       _catalog = ParkingMapCatalog(widget.lots);
     }
-    if (!widget.lots.any((lot) => lot.id == _selectedLot.id)) {
-      _selectedLot = widget.lots.first;
-    }
+    final selectedIndex = widget.lots.indexWhere(
+      (lot) => lot.id == _selectedLot.id,
+    );
+    _selectedLot = selectedIndex < 0
+        ? widget.lots.first
+        : widget.lots[selectedIndex];
     if (widget.directionsLotId == null ||
         (widget.directionsLotId == oldWidget.directionsLotId &&
             widget.directionsOrigin == oldWidget.directionsOrigin)) {

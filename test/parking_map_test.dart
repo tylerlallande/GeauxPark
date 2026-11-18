@@ -10,6 +10,8 @@ import 'package:geauxpark/data/parking_locations.dart';
 import 'package:geauxpark/data/campus_parking_locations.dart';
 import 'package:geauxpark/data/sample_parking_details.dart';
 import 'package:geauxpark/data/sample_parking_lots.dart';
+import 'package:geauxpark/models/parking_lot.dart';
+import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/screens/parking_map_screen.dart';
 import 'package:geauxpark/services/road_routing_service.dart';
 import 'package:geauxpark/services/directions_service.dart';
@@ -46,6 +48,51 @@ class _PendingLocation extends DirectionsService {
 }
 
 void main() {
+  testWidgets(
+    'catalog refresh updates the selected lot without changing its ID',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final original = sampleParkingLots.first;
+      final updated = ParkingLot(
+        id: original.id,
+        name: 'Updated selected lot',
+        address: 'Updated address',
+        distanceMiles: 0.2,
+        priceLabel: 'Updated price',
+        spacesAvailable: 0,
+        isAccessible: true,
+        permitTypes: {ParkingPermit.commuter},
+        latitude: original.latitude,
+        longitude: original.longitude,
+      );
+      ParkingLot? openedLot;
+      Widget screen(List<ParkingLot> lots) => MaterialApp(
+        home: Scaffold(
+          body: ParkingMapScreen(
+            lots: lots,
+            savedLotIds: const {},
+            selectedPermits: const {ParkingPermit.visitor},
+            onLotSelected: (lot) => openedLot = lot,
+          ),
+        ),
+      );
+      await tester.pumpWidget(screen([original, sampleParkingLots[1]]));
+      await tester.pumpAndSettle();
+      expect(find.text(original.name), findsOneWidget);
+      await tester.pumpWidget(screen([sampleParkingLots[1], updated]));
+      await tester.pumpAndSettle();
+      expect(find.text(original.name), findsNothing);
+      expect(find.text(updated.name), findsOneWidget);
+      expect(find.text('0 spots · Updated price'), findsOneWidget);
+      expect(find.text('Your permit is not accepted here'), findsOneWidget);
+      await tester.tap(find.text(updated.name));
+      expect(openedLot, same(updated));
+    },
+  );
+
   for (final fails in [false, true]) {
     testWidgets('switching pins cancels a location retry (fails: $fails)', (
       tester,
