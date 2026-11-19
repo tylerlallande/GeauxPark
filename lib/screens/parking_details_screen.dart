@@ -8,6 +8,7 @@ import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
 import '../repositories/parking_repository.dart';
+import 'parking_lot_layout_screen.dart';
 import '../services/directions_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_diagnostics.dart';
@@ -245,6 +246,19 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _openSpaceMap() {
+    final repository = widget.repository;
+    if (repository is! ParkingLotLayoutRepository) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ParkingLotLayoutScreen(
+          lot: widget.lot,
+          repository: repository as ParkingLotLayoutRepository,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -296,6 +310,14 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
               onReportAvailability: widget.onReportAvailability == null
                   ? null
                   : _reportAvailability,
+              onOpenSpaceMap:
+                  widget.repository is ParkingLotLayoutRepository &&
+                      _supportsSpaceMap(widget.lot.id)
+                  ? _openSpaceMap
+                  : null,
+              dataStatus: widget.repository is ParkingDataStatusProvider
+                  ? (widget.repository as ParkingDataStatusProvider).dataStatus
+                  : null,
             ),
           );
         },
@@ -318,6 +340,8 @@ class _DetailsContent extends StatelessWidget {
     required this.occupancyReport,
     required this.isReportingAvailability,
     required this.onReportAvailability,
+    required this.onOpenSpaceMap,
+    required this.dataStatus,
   });
 
   final ParkingLot lot;
@@ -332,6 +356,8 @@ class _DetailsContent extends StatelessWidget {
   final OccupancyReport? occupancyReport;
   final bool isReportingAvailability;
   final VoidCallback? onReportAvailability;
+  final VoidCallback? onOpenSpaceMap;
+  final ParkingDataStatus? dataStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -387,6 +413,10 @@ class _DetailsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        if (dataStatus != null && !dataStatus!.isLive) ...[
+          _DetailsDataNotice(mode: dataStatus!.mode),
+          const SizedBox(height: 12),
+        ],
         Row(
           children: [
             Expanded(
@@ -476,6 +506,21 @@ class _DetailsContent extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _PermitAccessCard(lot: lot, selectedPermits: selectedPermits),
+        if (onOpenSpaceMap != null) ...[
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              key: const ValueKey('open-space-level-map'),
+              leading: const Icon(Icons.space_dashboard_outlined),
+              title: const Text('View individual parking spaces'),
+              subtitle: const Text(
+                'See verified space boundaries and occupancy when available.',
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: onOpenSpaceMap,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         ParkingLotTags(lot: lot),
         const SizedBox(height: 16),
@@ -537,6 +582,49 @@ class _DetailsContent extends StatelessWidget {
     );
   }
 }
+
+class _DetailsDataNotice extends StatelessWidget {
+  const _DetailsDataNotice({required this.mode});
+
+  final ParkingDataMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final text = mode == ParkingDataMode.demo
+        ? 'Demo details — availability and pricing are sample data.'
+        : 'Offline details — showing sample data until the server reconnects.';
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colors.secondaryContainer,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              color: colors.onSecondaryContainer,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(color: colors.onSecondaryContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+bool _supportsSpaceMap(String lotId) =>
+    lotId == 'south-quad-west-403' || lotId == 'touchdown-village-visitor';
 
 String _distanceLabel(LatLng origin, LatLng destination) {
   final miles = const Distance().as(LengthUnit.Mile, origin, destination);

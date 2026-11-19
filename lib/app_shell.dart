@@ -47,6 +47,7 @@ class _AppShellState extends State<AppShell> {
   bool _savingPermits = false;
   final Set<String> _savingReportLotIds = {};
   bool _loadFailed = false;
+  ParkingDataStatus? _dataStatus;
   String? _mapDirectionsLotId;
   LatLng? _mapDirectionsOrigin;
   int? _swipePointer;
@@ -56,6 +57,10 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    final repository = widget.parkingRepository;
+    if (repository is ParkingDataStatusProvider) {
+      _dataStatus = (repository as ParkingDataStatusProvider).dataStatus;
+    }
     _loadSavedLots();
     _loadParkingLots();
   }
@@ -64,7 +69,13 @@ class _AppShellState extends State<AppShell> {
     try {
       final lots = await widget.parkingRepository.fetchParkingLots();
       if (!mounted || lots.isEmpty) return;
-      setState(() => _parkingLots = lots);
+      setState(() {
+        _parkingLots = lots;
+        final repository = widget.parkingRepository;
+        if (repository is ParkingDataStatusProvider) {
+          _dataStatus = (repository as ParkingDataStatusProvider).dataStatus;
+        }
+      });
     } on Object catch (error, stackTrace) {
       recordAppError('Failed to load parking catalog', error, stackTrace);
       if (!mounted) return;
@@ -395,27 +406,87 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       body: SafeArea(
-        child: Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: _startSwipe,
-          onPointerUp: _finishSwipe,
-          onPointerCancel: (_) => _resetSwipe(),
-          child: PageView.builder(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: screens.length,
-            onPageChanged: (index) => setState(() => _selectedIndex = index),
-            itemBuilder: (context, index) => _KeepAliveTab(
-              active: index == _selectedIndex,
-              child: screens[index],
+        child: Column(
+          children: [
+            if (_dataStatus != null) _ParkingDataBanner(status: _dataStatus!),
+            Expanded(
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: _startSwipe,
+                onPointerUp: _finishSwipe,
+                onPointerCancel: (_) => _resetSwipe(),
+                child: PageView.builder(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: screens.length,
+                  onPageChanged: (index) =>
+                      setState(() => _selectedIndex = index),
+                  itemBuilder: (context, index) => _KeepAliveTab(
+                    active: index == _selectedIndex,
+                    child: screens[index],
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         destinations: destinations,
         onDestinationSelected: _selectTab,
+      ),
+    );
+  }
+}
+
+class _ParkingDataBanner extends StatelessWidget {
+  const _ParkingDataBanner({required this.status});
+
+  final ParkingDataStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isLive = status.isLive;
+    final message = switch (status.mode) {
+      ParkingDataMode.live => 'Live parking catalog connected',
+      ParkingDataMode.offlineSample =>
+        'Server unavailable — showing sample parking data',
+      ParkingDataMode.demo =>
+        'Demo mode — availability and prices are sample data',
+    };
+    return Semantics(
+      liveRegion: true,
+      label: message,
+      child: Container(
+        width: double.infinity,
+        color: isLive ? colors.tertiaryContainer : colors.secondaryContainer,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isLive ? Icons.cloud_done_outlined : Icons.info_outline_rounded,
+              size: 18,
+              color: isLive
+                  ? colors.onTertiaryContainer
+                  : colors.onSecondaryContainer,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: isLive
+                      ? colors.onTertiaryContainer
+                      : colors.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

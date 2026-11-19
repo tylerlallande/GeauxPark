@@ -7,6 +7,7 @@ import 'package:geauxpark/models/parking_lot.dart';
 import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/repositories/parking_repository.dart';
 import 'package:geauxpark/screens/parking_details_screen.dart';
+import 'package:geauxpark/widgets/parking_lot_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Finder verticalScrollable() => find.byWidgetPredicate(
@@ -276,11 +277,21 @@ void main() {
       300,
       scrollable: verticalScrollable().first,
     );
-
-    await tester.tap(find.text('Union Square Garage'));
+    final card = tester.widget<ParkingLotCard>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is ParkingLotCard && widget.lot.id == 'union-square-garage',
+      ),
+    );
+    card.onTap();
     await tester.pumpAndSettle();
 
     expect(find.text('Parking details'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('About this location'),
+      250,
+      scrollable: verticalScrollable().first,
+    );
     expect(find.text('About this location'), findsOneWidget);
     expect(find.text('Hours'), findsOneWidget);
     await tester.scrollUntilVisible(
