@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
+import '../config/map_tile_config.dart';
 import '../l10n/app_localizations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
@@ -13,6 +14,7 @@ import '../models/parking_availability.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_diagnostics.dart';
 import '../widgets/parking_lot_tags.dart';
+import '../widgets/parking_map_controls.dart';
 import '../widgets/road_routing_consent.dart';
 import '../widgets/availability_indicator.dart';
 import '../services/directions_service.dart';
@@ -149,6 +151,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     final strings = AppLocalizations.of(context);
     final matchingLots = _catalog.matching(_selectedTags);
     final canFilter = !_isGettingDirections && !_isDirectionsOpen;
+    final tileConfig = loadMapTileConfig();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -173,7 +176,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: 10),
-          const _AvailabilityLegend(),
+          const ParkingAvailabilityLegend(),
           const SizedBox(height: 6),
           SizedBox(
             height: 42,
@@ -207,7 +210,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
           if (widget.selectedPermits.isNotEmpty) ...[
             const SizedBox(height: 8),
-            const _PermitLegend(),
+            const ParkingPermitLegend(),
           ],
           const SizedBox(height: 18),
           Expanded(
@@ -233,16 +236,29 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         maxZoom: 18,
                       ),
                       children: [
-                        TileLayer(
-                          urlTemplate:
-                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.geauxpark.geauxpark',
-                          // The tab remains mounted while inactive and its
-                          // tickers are paused for smoother navigation. Avoid
-                          // fade-in tiles getting stuck transparent when they
-                          // finish loading before the Map tab becomes active.
-                          tileDisplay: const TileDisplay.instantaneous(),
-                        ),
+                        if (tileConfig != null)
+                          TileLayer(
+                            urlTemplate: tileConfig.urlTemplate,
+                            userAgentPackageName: 'com.geauxpark.geauxpark',
+                            // The tab remains mounted while inactive and its
+                            // tickers are paused for smoother navigation.
+                            tileDisplay: const TileDisplay.instantaneous(),
+                          )
+                        else
+                          ColoredBox(
+                            color: colors.surfaceContainerHighest,
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 300,
+                                ),
+                                child: Text(
+                                  strings.mapTilesNotConfigured,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
                         if (_roadRoute != null)
                           PolylineLayer(
                             polylines: [
@@ -452,15 +468,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                             ),
                           ),
                         ),
-                        RichAttributionWidget(
-                          attributions: [
-                            TextSourceAttribution('OpenStreetMap contributors'),
-                          ],
-                        ),
+                        if (tileConfig?.isDemoSource ?? false)
+                          RichAttributionWidget(
+                            attributions: [
+                              TextSourceAttribution(
+                                'OpenStreetMap contributors',
+                              ),
+                            ],
+                          ),
                         Positioned(
                           top: 16,
                           right: 16,
-                          child: _MapZoomControls(
+                          child: ParkingMapZoomControls(
                             onZoomIn: () => _changeZoom(1),
                             onZoomOut: () => _changeZoom(-1),
                           ),
@@ -468,7 +487,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         Positioned(
                           top: 16,
                           left: 16,
-                          child: _MyLocationButton(
+                          child: ParkingMapLocationButton(
                             isLoading: _isLocating,
                             isTracking: _isTrackingLocation,
                             onPressed: _isLocating || _isGettingDirections
@@ -600,7 +619,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       );
     } on DirectionsException catch (error) {
       _showDirectionsError(error.message, onRetry: _openExternalDirections);
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to open external directions', error, stackTrace);
       _showDirectionsError(
         'Could not get your location. Check location access and try again.',
@@ -642,7 +661,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       await _fetchRoadRoute(origin, destination, requestId: requestId);
     } on DirectionsException catch (error) {
       if (isCurrent()) _showDirectionsError(error.message);
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to get map directions', error, stackTrace);
       if (isCurrent()) {
         _showDirectionsError(
@@ -684,11 +703,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       );
     } on RoadRoutingException catch (error) {
       if (isCurrent()) setState(() => _routeError = error.message);
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to load road route', error, stackTrace);
       if (isCurrent()) {
         setState(
-          () => _routeError = 'Could not load road directions. Check your connection and try again.',
+          () => _routeError = AppLocalizations.of(context).roadDirectionsError,
         );
       }
     } finally {
@@ -698,11 +717,12 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   void _showDirectionsError(String message, {VoidCallback? onRetry}) {
     if (!mounted) return;
+    final strings = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         action: SnackBarAction(
-          label: 'Retry',
+          label: strings.retryAction,
           onPressed: onRetry ?? _getDirections,
         ),
       ),
@@ -743,7 +763,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       if (mounted) setState(() => _isTrackingLocation = true);
     } on DirectionsException catch (error) {
       _showLocationMessage(error.message);
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to start live location', error, stackTrace);
       _showLocationMessage(
         'Could not get your location. Check your location permission and try again.',
@@ -815,14 +835,14 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
         Navigator.of(context).pop();
       } else {
         setState(
-          () => _error = 'Could not open Google Maps. Please try again.',
+          () => _error = AppLocalizations.of(context).googleMapsOpenError,
         );
       }
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to launch Google Maps', error, stackTrace);
       if (mounted) {
         setState(
-          () => _error = 'Could not open Google Maps. Please try again.',
+          () => _error = AppLocalizations.of(context).googleMapsOpenError,
         );
       }
     } finally {
@@ -832,6 +852,7 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -840,11 +861,11 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Directions to ${widget.lot.name}',
+              strings.directionsTo(widget.lot.name),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text('From your current location · Opens Google Maps'),
+            Text(strings.currentLocationGoogleMaps),
             const SizedBox(height: 20),
             Wrap(
               spacing: 12,
@@ -856,7 +877,7 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
                       ? null
                       : () => _open(DirectionsMode.driving),
                   icon: const Icon(Icons.directions_car_rounded),
-                  label: const Text('Drive'),
+                  label: Text(strings.drive),
                 ),
                 OutlinedButton.icon(
                   key: const ValueKey('directions-walking'),
@@ -864,13 +885,13 @@ class _DirectionsSheetState extends State<_DirectionsSheet> {
                       ? null
                       : () => _open(DirectionsMode.walking),
                   icon: const Icon(Icons.directions_walk_rounded),
-                  label: const Text('Walk'),
+                  label: Text(strings.walk),
                 ),
               ],
             ),
             if (_opening) ...[
               const SizedBox(height: 12),
-              const Text('Opening Google Maps…'),
+              Text(strings.openingGoogleMaps),
             ],
             if (_error != null) ...[
               const SizedBox(height: 12),
@@ -905,6 +926,7 @@ class _RouteStepsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
@@ -921,7 +943,7 @@ class _RouteStepsPanel extends StatelessWidget {
                         TextButton.icon(
                           onPressed: onRetry,
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Try again'),
+                          label: Text(strings.retry),
                         ),
                       ],
                     )
@@ -934,7 +956,7 @@ class _RouteStepsPanel extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         const SizedBox(width: 10),
-                        const Text('Finding a driving route…'),
+                        Text(strings.findingDrivingRoute),
                       ],
                     ),
             )
@@ -948,7 +970,7 @@ class _RouteStepsPanel extends StatelessWidget {
                       Icon(Icons.directions_car_rounded, color: colors.primary),
                       const SizedBox(width: 8),
                       Text(
-                        'Driving directions',
+                        strings.drivingDirections,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const Spacer(),
@@ -1003,74 +1025,6 @@ class _PinTipClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(_PinTipClipper oldClipper) => false;
-}
-
-class _MyLocationButton extends StatelessWidget {
-  const _MyLocationButton({
-    required this.isLoading,
-    required this.isTracking,
-    required this.onPressed,
-  });
-
-  final bool isLoading;
-  final bool isTracking;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: isTracking ? colors.primary : colors.surface,
-      elevation: 3,
-      borderRadius: BorderRadius.circular(14),
-      child: IconButton(
-        tooltip: isTracking ? 'Stop live location' : 'Use my live location',
-        onPressed: onPressed,
-        color: isTracking ? colors.onPrimary : colors.primary,
-        icon: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(isTracking ? Icons.location_searching : Icons.my_location),
-      ),
-    );
-  }
-}
-
-class _MapZoomControls extends StatelessWidget {
-  const _MapZoomControls({required this.onZoomIn, required this.onZoomOut});
-
-  final VoidCallback onZoomIn;
-  final VoidCallback onZoomOut;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: colors.surface,
-      elevation: 3,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: 'Zoom in',
-            onPressed: onZoomIn,
-            icon: const Icon(Icons.add_rounded),
-          ),
-          Container(height: 1, width: 40, color: colors.outlineVariant),
-          IconButton(
-            tooltip: 'Zoom out',
-            onPressed: onZoomOut,
-            icon: const Icon(Icons.remove_rounded),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _SelectedLotCard extends StatelessWidget {
@@ -1157,48 +1111,6 @@ class _SelectedLotCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AvailabilityLegend extends StatelessWidget {
-  const _AvailabilityLegend();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          Text('Availability:', style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(width: 8),
-          for (final status in ParkingAvailabilityStatus.values) ...[
-            AvailabilityIndicator(status: status, compact: true),
-            if (status != ParkingAvailabilityStatus.values.last)
-              const SizedBox(width: 6),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _PermitLegend extends StatelessWidget {
-  const _PermitLegend();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Icon(Icons.verified_outlined, size: 16, color: colors.tertiary),
-        const SizedBox(width: 4),
-        const Text('Eligible'),
-        const SizedBox(width: 14),
-        Icon(Icons.block_rounded, size: 16, color: colors.onSurfaceVariant),
-        const SizedBox(width: 4),
-        const Text('Permit restricted'),
-      ],
     );
   }
 }

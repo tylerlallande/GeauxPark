@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/parking_permit.dart';
 import '../theme/app_theme.dart';
 
@@ -22,6 +23,7 @@ class PermitPreferencesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = AppLocalizations.of(context);
     return ListView(
       key: const PageStorageKey('permit-preferences-scroll'),
       padding: const EdgeInsets.fromLTRB(
@@ -31,10 +33,13 @@ class PermitPreferencesScreen extends StatelessWidget {
         32,
       ),
       children: [
-        Text('Your parking', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          strings.yourParking,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const SizedBox(height: 6),
         Text(
-          'Choose every permit you can use. GeauxPark will highlight eligible lots and dim restricted ones.',
+          strings.permitPreferencesDescription,
           style: Theme.of(context).textTheme.bodyLarge
               ?.copyWith(color: colors.onSurfaceVariant),
         ),
@@ -66,8 +71,8 @@ class PermitPreferencesScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   selectedPermits.isEmpty
-                      ? 'No permits selected. All lots remain visible until you personalize eligibility.'
-                      : '${selectedPermits.length} ${selectedPermits.length == 1 ? 'permit' : 'permits'} selected',
+                      ? strings.noPermitsSelected
+                      : strings.selectedPermitCount(selectedPermits.length),
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
@@ -76,7 +81,10 @@ class PermitPreferencesScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text('Parking permits', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          strings.parkingPermits,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 10),
         Card(
           clipBehavior: Clip.antiAlias,

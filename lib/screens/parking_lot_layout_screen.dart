@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_lot_layout.dart';
 import '../repositories/parking_repository.dart';
@@ -17,8 +18,9 @@ class ParkingLotLayoutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text('${lot.name} spaces')),
+      appBar: AppBar(title: Text(strings.lotSpaces(lot.name))),
       body: FutureBuilder<ParkingLotLayout?>(
         future: repository.fetchParkingLotLayout(lot.id),
         builder: (context, snapshot) {
@@ -26,18 +28,18 @@ class ParkingLotLayoutScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return const _LayoutMessage(
+            return _LayoutMessage(
               icon: Icons.cloud_off_outlined,
-              title: 'Space map unavailable',
-              message: 'Could not load this lot right now. Please try again.',
+              title: strings.spaceMapUnavailable,
+              message: strings.spaceMapLoadError,
             );
           }
           final layout = snapshot.data;
           if (layout == null || !layout.hasVerifiedSpaces) {
-            return const _LayoutMessage(
+            return _LayoutMessage(
               icon: Icons.space_dashboard_outlined,
-              title: 'Verified space map coming soon',
-              message: 'This lot is ready for space-level data, but verified parking-space boundaries and live occupancy are not connected yet.',
+              title: strings.verifiedSpaceMapComingSoon,
+              message: strings.verifiedSpaceMapPending,
             );
           }
           return _VerifiedLayout(layout: layout);
@@ -54,11 +56,12 @@ class _VerifiedLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Tap a space to check its latest reported status.',
+          strings.tapSpaceHelp,
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 16),
@@ -80,19 +83,20 @@ class _VerifiedLayout extends StatelessWidget {
                       height: space.height * constraints.maxHeight,
                       child: Semantics(
                         button: true,
-                        label: '${space.label}, ${_statusLabel(space.status)}',
+                        label:
+                            '${space.label}, ${strings.parkingSpaceStatus(space.status)}',
                         child: Tooltip(
                           message:
-                              '${space.label}: ${_statusLabel(space.status)}',
+                              '${space.label}: ${strings.parkingSpaceStatus(space.status)}',
                           child: Material(
                             color: _statusColor(context, space.status),
                             borderRadius: BorderRadius.circular(4),
                             child: InkWell(
-                              onTap: () => ScaffoldMessenger.of(context)
-                                  .showSnackBar(
+                              onTap: () =>
+                                  ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        '${space.label}: ${_statusLabel(space.status)}',
+                                        '${space.label}: ${strings.parkingSpaceStatus(space.status)}',
                                       ),
                                     ),
                                   ),
@@ -108,7 +112,7 @@ class _VerifiedLayout extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Source: ${layout.sourceLabel}',
+          strings.source(layout.sourceLabel),
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -149,13 +153,6 @@ class _LayoutMessage extends StatelessWidget {
     );
   }
 }
-
-String _statusLabel(ParkingSpaceStatus status) => switch (status) {
-  ParkingSpaceStatus.unknown => 'status unknown',
-  ParkingSpaceStatus.available => 'available',
-  ParkingSpaceStatus.occupied => 'occupied',
-  ParkingSpaceStatus.unavailable => 'unavailable',
-};
 
 Color _statusColor(BuildContext context, ParkingSpaceStatus status) {
   final colors = Theme.of(context).colorScheme;

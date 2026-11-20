@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
@@ -92,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = AppLocalizations.of(context);
 
     return CustomScrollView(
       key: const PageStorageKey('home-scroll'),
@@ -108,26 +110,26 @@ class _HomeScreenState extends State<HomeScreen> {
               _HomeHeader(colors: colors),
               const SizedBox(height: 28),
               Text(
-                'Find your parking',
+                strings.findYourParking,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),
               Text(
-                'Make your next move with confidence.',
+                strings.confidentNextMove,
                 style: Theme.of(context).textTheme.bodyLarge
                     ?.copyWith(color: colors.onSurfaceVariant),
               ),
               const SizedBox(height: 16),
               SearchBar(
                 controller: _searchController,
-                hintText: 'Search lots, garages, or streets',
+                hintText: strings.searchHint,
                 leading: const Icon(Icons.search_rounded),
                 onChanged: (value) => setState(() => _query = value),
               ),
               const SizedBox(height: 22),
               _SectionHeading(
-                title: 'Quick filters',
-                actionLabel: 'Clear',
+                title: strings.quickFilters,
+                actionLabel: strings.clear,
                 onAction: () {
                   _searchController.clear();
                   setState(() {
@@ -146,11 +148,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   children: ParkingFilter.values.map((filter) {
                     final label = switch (filter) {
-                      ParkingFilter.all => 'All parking',
-                      ParkingFilter.myPermits => 'My permits',
-                      ParkingFilter.available => 'Available now',
-                      ParkingFilter.free => 'Free',
-                      ParkingFilter.accessible => 'Accessible',
+                      ParkingFilter.all => strings.allParking,
+                      ParkingFilter.myPermits => strings.myPermits,
+                      ParkingFilter.available => strings.availableNow,
+                      ParkingFilter.free => strings.free,
+                      ParkingFilter.accessible => strings.accessible,
                     };
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -182,10 +184,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Lot types', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                strings.lotTypes,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 4),
               Text(
-                'Choose any type. Quick filters narrow your results further.',
+                strings.lotTypeHelp,
                 style: Theme.of(context).textTheme.bodySmall
                     ?.copyWith(color: colors.onSurfaceVariant),
               ),
@@ -217,8 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _GameDayBanner(onTap: widget.onGameDaySelected),
               const SizedBox(height: 20),
               _SectionHeading(
-                title: 'Parking near LSU',
-                actionLabel: '${_visibleLots.length} results',
+                title: strings.parkingNearLsu,
+                actionLabel: strings.results(_visibleLots.length),
               ),
               const SizedBox(height: 12),
             ],
@@ -268,6 +273,7 @@ class _PermitSetupBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = AppLocalizations.of(context);
     return Material(
       color: colors.secondary.withValues(alpha: 0.18),
       borderRadius: BorderRadius.circular(AppRadii.card),
@@ -280,11 +286,7 @@ class _PermitSetupBanner extends StatelessWidget {
             children: [
               Icon(Icons.badge_outlined, color: colors.primary),
               const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Add your parking permits to see which lots you can use.',
-                ),
-              ),
+              Expanded(child: Text(strings.addPermitsHelp)),
               Icon(Icons.chevron_right_rounded, color: colors.primary),
             ],
           ),
@@ -301,6 +303,7 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return Row(
       children: [
         Stack(
@@ -340,12 +343,12 @@ class _HomeHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'GeauxPark',
+                strings.appTitle,
                 style: Theme.of(context).textTheme.titleLarge
                     ?.copyWith(color: colors.primary),
               ),
               Text(
-                'LSU PARKING COMMAND CENTER',
+                strings.commandCenter,
                 style: Theme.of(context).textTheme.labelSmall
                     ?.copyWith(color: colors.onSurfaceVariant),
               ),
@@ -409,6 +412,7 @@ class _GameDayBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final strings = AppLocalizations.of(context);
     return Material(
       color: colors.primary,
       borderRadius: BorderRadius.circular(22),
@@ -436,14 +440,14 @@ class _GameDayBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Game-day parking',
+                      strings.gameDayParking,
                       style: text.titleMedium?.copyWith(
                         color: colors.onPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Arrive early and check event rates before heading to campus.',
+                      strings.gameDayParkingHelp,
                       style: text.bodySmall?.copyWith(
                         color: AppColors.onPurpleMuted,
                       ),
@@ -468,6 +472,7 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -476,14 +481,11 @@ class _EmptyResults extends StatelessWidget {
           const Icon(Icons.search_off_rounded, size: 48),
           const SizedBox(height: 12),
           Text(
-            'No parking found',
+            strings.noParkingFound,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Try another search or choose a different filter.',
-            textAlign: TextAlign.center,
-          ),
+          Text(strings.noParkingFoundHelp, textAlign: TextAlign.center),
         ],
       ),
     );

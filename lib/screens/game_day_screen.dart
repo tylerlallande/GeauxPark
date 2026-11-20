@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/game_day.dart';
 import '../models/parking_lot.dart';
 import '../theme/app_theme.dart';
@@ -18,13 +19,14 @@ class GameDayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     final lotsById = {for (final lot in lots) lot.id: lot};
     final statuses = plan.lotStatuses
         .where((status) => lotsById.containsKey(status.lotId))
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Game day')),
+      appBar: AppBar(title: Text(strings.gameDay)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screen,
@@ -35,10 +37,10 @@ class GameDayScreen extends StatelessWidget {
         children: [
           _GameDayHero(plan: plan),
           const SizedBox(height: AppSpacing.section),
-          const _SectionTitle('Parking status'),
+          _SectionTitle(strings.parkingStatus),
           const SizedBox(height: AppSpacing.md),
           if (statuses.isEmpty)
-            const Text('Game-day parking status is not available yet.')
+            Text(strings.gameDayUnavailable)
           else
             for (final status in statuses) ...[
               _GameDayLotTile(
@@ -49,7 +51,7 @@ class GameDayScreen extends StatelessWidget {
               const SizedBox(height: 10),
             ],
           const SizedBox(height: AppSpacing.md),
-          const _SectionTitle('Game-day timeline'),
+          _SectionTitle(strings.gameDayTimeline),
           const SizedBox(height: AppSpacing.md),
           Card(
             child: Padding(
@@ -124,7 +126,8 @@ class _GameDayHero extends StatelessWidget {
               const Spacer(),
               _HeroPill(
                 icon: Icons.schedule_rounded,
-                label: 'Lots open ${plan.lotsOpenLabel}',
+                label: AppLocalizations.of(context)
+                    .lotsOpen(plan.lotsOpenLabel),
               ),
             ],
           ),

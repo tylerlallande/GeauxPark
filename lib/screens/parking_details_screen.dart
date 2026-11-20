@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../l10n/app_localizations.dart';
 import '../widgets/parking_lot_tags.dart';
 
 import '../models/parking_details.dart';
@@ -14,7 +15,7 @@ import '../theme/app_theme.dart';
 import '../utils/app_diagnostics.dart';
 import '../widgets/road_routing_consent.dart';
 import '../widgets/availability_indicator.dart';
-import '../widgets/loading_skeleton.dart';
+import '../widgets/parking_details_states.dart';
 import '../widgets/smooth_reveal.dart';
 
 typedef ParkingSaveCallback = Future<bool> Function(ParkingLot lot);
@@ -95,7 +96,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
     } on DirectionsException catch (error) {
       if (mounted) setState(() => _locationMessage = error.message);
       return null;
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError(
         'Failed to get location for parking details',
         error,
@@ -114,6 +115,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
   }
 
   Future<void> _openDirections(ParkingDetails details) async {
+    final strings = AppLocalizations.of(context);
     if (!details.hasCoordinates || _isOpeningDirections) return;
     final origin = await _getCurrentLocation();
     if (!mounted || origin == null) return;
@@ -141,13 +143,13 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
               FilledButton.icon(
                 onPressed: () => Navigator.pop(context, DirectionsMode.driving),
                 icon: const Icon(Icons.directions_car_rounded),
-                label: const Text('Drive'),
+                label: Text(strings.drive),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => Navigator.pop(context, DirectionsMode.walking),
                 icon: const Icon(Icons.directions_walk_rounded),
-                label: const Text('Walk'),
+                label: Text(strings.walk),
               ),
             ],
           ),
@@ -163,11 +165,8 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
         mode: mode,
       );
       if (mounted && !opened) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open maps. Please try again.'),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(strings.couldNotOpenMaps)));
       }
     } on DirectionsException catch (error) {
       if (mounted) {
@@ -191,7 +190,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
       } else {
         _showActionError('Could not update saved parking. Please try again.');
       }
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to update saved parking', error, stackTrace);
       _showActionError('Could not update saved parking. Please try again.');
     } finally {
@@ -225,7 +224,7 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
           'Could not save the availability report. Please try again.',
         );
       }
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError(
         'Failed to report parking availability',
         error,
@@ -261,9 +260,10 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parking details'),
+        title: Text(strings.parkingDetails),
         actions: [
           IconButton(
             tooltip: _isSaved ? 'Remove from saved' : 'Save parking',
@@ -285,10 +285,10 @@ class _ParkingDetailsScreenState extends State<ParkingDetailsScreen> {
         future: _detailsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return _DetailsLoading(lot: widget.lot);
+            return ParkingDetailsLoading(lot: widget.lot);
           }
           if (snapshot.hasError) {
-            return _DetailsError(
+            return ParkingDetailsError(
               lot: widget.lot,
               onRetry: () => setState(_loadDetails),
             );
@@ -362,6 +362,7 @@ class _DetailsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = AppLocalizations.of(context);
     final availabilityStatus =
         occupancyReport?.status ?? lot.availabilityStatus;
     return ListView(
@@ -422,7 +423,7 @@ class _DetailsContent extends StatelessWidget {
             Expanded(
               child: _SummaryCard(
                 icon: Icons.directions_walk_rounded,
-                label: 'Distance',
+                label: strings.distance,
                 value:
                     currentLocation != null && details?.hasCoordinates == true
                     ? _distanceLabel(
@@ -440,7 +441,7 @@ class _DetailsContent extends StatelessWidget {
             Expanded(
               child: _SummaryCard(
                 icon: Icons.local_offer_outlined,
-                label: 'Price',
+                label: strings.price,
                 value: lot.priceLabel,
               ),
             ),
@@ -448,7 +449,7 @@ class _DetailsContent extends StatelessWidget {
             Expanded(
               child: _SummaryCard(
                 icon: Icons.directions_car_filled_outlined,
-                label: 'Available',
+                label: strings.available,
                 value:
                     occupancyReport?.status.label ??
                     lot.spacesAvailable?.toString() ??
@@ -486,7 +487,7 @@ class _DetailsContent extends StatelessWidget {
             child: TextButton.icon(
               onPressed: isLocating ? null : onRequestLocation,
               icon: const Icon(Icons.my_location_rounded),
-              label: const Text('Try location again'),
+              label: Text(strings.tryLocationAgain),
             ),
           ),
         ],
@@ -512,10 +513,8 @@ class _DetailsContent extends StatelessWidget {
             child: ListTile(
               key: const ValueKey('open-space-level-map'),
               leading: const Icon(Icons.space_dashboard_outlined),
-              title: const Text('View individual parking spaces'),
-              subtitle: const Text(
-                'See verified space boundaries and occupancy when available.',
-              ),
+              title: Text(strings.viewIndividualSpaces),
+              subtitle: Text(strings.viewIndividualSpacesDescription),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: onOpenSpaceMap,
             ),
@@ -527,17 +526,17 @@ class _DetailsContent extends StatelessWidget {
         _DetailsPanel(
           children: [
             _DetailSection(
-              title: 'About this location',
+              title: strings.aboutLocation,
               icon: Icons.info_outline_rounded,
               content: details?.description,
             ),
             _DetailSection(
-              title: 'Hours',
+              title: strings.hours,
               icon: Icons.schedule_rounded,
               content: details?.hours,
             ),
             _DetailSection(
-              title: 'Game-day information',
+              title: strings.gameDayInformation,
               icon: Icons.sports_football_rounded,
               content: details?.eventRestrictions,
               isLast: true,
@@ -796,6 +795,7 @@ class _DetailSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = AppLocalizations.of(context);
     final value = content?.trim();
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 14 : 18),
@@ -812,7 +812,7 @@ class _DetailSection extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value == null || value.isEmpty
-                ? 'Information not provided yet.'
+                ? strings.informationNotProvided
                 : value,
             style: Theme.of(context).textTheme.bodyLarge
                 ?.copyWith(color: colors.onSurfaceVariant),
@@ -830,15 +830,19 @@ class _AmenitiesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Amenities', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            strings.amenities,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 10),
           if (amenities.isEmpty)
-            const Text('Information not provided yet.')
+            Text(strings.informationNotProvided)
           else
             Wrap(
               spacing: 8,
@@ -857,73 +861,6 @@ class _AmenitiesSection extends StatelessWidget {
                   .toList(),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _DetailsLoading extends StatelessWidget {
-  const _DetailsLoading({required this.lot});
-
-  final ParkingLot lot;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Loading details for ${lot.name}',
-      child: const SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LoadingSkeleton(height: 190, borderRadius: 24),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: LoadingSkeleton(height: 92)),
-                SizedBox(width: 12),
-                Expanded(child: LoadingSkeleton(height: 92)),
-              ],
-            ),
-            SizedBox(height: 16),
-            LoadingSkeleton(height: 170, borderRadius: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailsError extends StatelessWidget {
-  const _DetailsError({required this.lot, required this.onRetry});
-
-  final ParkingLot lot;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_rounded, size: 52),
-            const SizedBox(height: 16),
-            Text(
-              'Could not load ${lot.name}',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Check your connection and try again.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 18),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
       ),
     );
   }

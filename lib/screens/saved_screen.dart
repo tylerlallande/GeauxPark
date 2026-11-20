@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
@@ -34,6 +35,7 @@ class SavedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     final lots = this.lots
         .where((lot) => savedLotIds.contains(lot.id))
         .toList();
@@ -43,9 +45,9 @@ class SavedScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Could not load saved parking.'),
+            Text(strings.savedParkingLoadError),
             const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+            FilledButton(onPressed: onRetry, child: Text(strings.retry)),
           ],
         ),
       );
@@ -65,12 +67,12 @@ class SavedScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: [
               Text(
-                'Saved parking',
+                strings.savedParking,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),
               Text(
-                '${lots.length} saved ${lots.length == 1 ? 'location' : 'locations'}',
+                strings.savedLocationCount(lots.length),
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -93,18 +95,15 @@ class SavedScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No saved parking yet',
+                    strings.noSavedParking,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Tap the bookmark on a parking lot to keep it here.',
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(strings.noSavedParkingHelp, textAlign: TextAlign.center),
                   const SizedBox(height: 20),
                   FilledButton(
                     onPressed: onBrowseParking,
-                    child: const Text('Find parking'),
+                    child: Text(strings.findParking),
                   ),
                 ],
               ),

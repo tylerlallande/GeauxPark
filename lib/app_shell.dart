@@ -76,13 +76,11 @@ class _AppShellState extends State<AppShell> {
           _dataStatus = (repository as ParkingDataStatusProvider).dataStatus;
         }
       });
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to load parking catalog', error, stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Using offline parking data for this session.'),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context).usingOfflineData)),
       );
     }
   }
@@ -105,16 +103,17 @@ class _AppShellState extends State<AppShell> {
         _selectedPermits = permits;
         _occupancyReports = reports;
       });
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to load local app state', error, stackTrace);
       if (!mounted) return;
       setState(() => _loadFailed = true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'Could not load saved parking. Please try again.',
+          content: Text(AppLocalizations.of(context).savedParkingLoadError),
+          action: SnackBarAction(
+            label: AppLocalizations.of(context).retry,
+            onPressed: _loadSavedLots,
           ),
-          action: SnackBarAction(label: 'Retry', onPressed: _loadSavedLots),
         ),
       );
     }
@@ -127,16 +126,16 @@ class _AppShellState extends State<AppShell> {
     try {
       final ids = permits.map((permit) => permit.id).toList()..sort();
       final saved = await preferences.setStringList(_parkingPermitsKey, ids);
-      if (!saved) throw StateError('Could not save parking permits');
+      if (!saved) throw Exception('Could not save parking permits');
       if (!mounted) return false;
       setState(() => _selectedPermits = {...permits});
       return true;
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to update parking permits', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not update parking permits. Try again.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).permitUpdateError),
           ),
         );
       }
@@ -157,16 +156,16 @@ class _AppShellState extends State<AppShell> {
         _savedLotsKey,
         nextIds.toList()..sort(),
       );
-      if (!saved) throw StateError('Could not save parking');
+      if (!saved) throw Exception('Could not save parking');
       if (!mounted) return false;
       setState(() => _savedLotIds = nextIds);
       return true;
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to update saved parking', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not update saved parking. Try again.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).savedParkingUpdateError),
           ),
         );
       }
@@ -197,15 +196,19 @@ class _AppShellState extends State<AppShell> {
         () => _occupancyReports = {..._occupancyReports, lot.id: report},
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${lot.name} reported as ${status.label}.')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).reportedAs(lot.name, status.label),
+          ),
+        ),
       );
       return true;
-    } on Object catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       recordAppError('Failed to save availability report', error, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not save the availability report. Try again.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).availabilityReportError),
           ),
         );
       }
