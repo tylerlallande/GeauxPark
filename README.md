@@ -88,6 +88,15 @@ GitHub Actions analyzes, tests, and builds the APK (version name set from the ta
 
 4. Before opening a pull request, run `flutter analyze` and `flutter test`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and review workflow.
 
+5. Run the critical user-flow integration test on a connected target:
+
+   ```bash
+   flutter test integration_test/parking_discovery_flow_test.dart -d macos
+   ```
+
+   Replace `macos` with an Android device identifier when validating the
+   production target.
+
 ### Run the parking API
 
 The repository includes a dependency-free Dart API for the lot list and lot
@@ -157,12 +166,28 @@ flutter run -d web-server \
   --web-port 8081 \
   --dart-define=GEAUXPARK_API_URL=http://<mac-ip-address>:8080 \
   --dart-define=GEAUXPARK_ALLOW_INSECURE_DEVELOPMENT_API=true \
+  --dart-define=GEAUXPARK_ALLOW_PUBLIC_OSM_DEMO_TILES=true \
   -t lib/main.dart
 ```
 
 Production API configuration accepts HTTPS only. The insecure-development flag
 is reserved for the local classroom demo and permits HTTP only for loopback or
 private local-network addresses; it does not allow public HTTP API hosts.
+
+Production releases must provide an approved HTTPS map-tile template:
+
+```bash
+flutter build web --release \
+  --dart-define=GEAUXPARK_MAP_TILE_URL=https://your-provider.example/{z}/{x}/{y}.png
+```
+
+The public OpenStreetMap tile endpoint is available only in debug builds or
+when the explicit classroom-demo flag is set. It is not silently used by an
+unconfigured production build.
+
+For tagged GitHub releases, add the template as the repository secret
+`GEAUXPARK_MAP_TILE_URL`. The release workflow intentionally stops instead of
+publishing an APK with an unconfigured map.
 
 Find the Mac's Wi-Fi address:
 

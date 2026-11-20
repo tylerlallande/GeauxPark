@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 Future<bool> confirmRoadRoutingConsent(BuildContext context) async {
+  final strings = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Calculate driving directions?'),
-      content: const Text(
-        'GeauxPark will send your current location and the selected lot location '
-        'to the public OSRM routing server (router.project-osrm.org) to find a '
-        'road route and turn-by-turn steps.',
-      ),
+      title: Text(strings.calculateDirectionsTitle),
+      content: Text(strings.calculateDirectionsMessage),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Not now'),
+          child: Text(strings.notNow),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Calculate route'),
+          child: Text(strings.calculateRoute),
         ),
       ],
     ),

@@ -84,4 +84,5 @@ flutter run \
   --web-port "$demo_port" \
   --dart-define="GEAUXPARK_API_URL=$demo_api_url" \
   --dart-define=GEAUXPARK_ALLOW_INSECURE_DEVELOPMENT_API=true \
+  --dart-define=GEAUXPARK_ALLOW_PUBLIC_OSM_DEMO_TILES=true \
   -t lib/main.dart

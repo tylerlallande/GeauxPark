@@ -13,7 +13,12 @@ import 'repositories/parking_repository.dart';
 import 'theme/app_theme.dart';
 import 'utils/app_diagnostics.dart';
 
-void main() {
+void main() => runGeauxParkApp();
+
+void runGeauxParkApp({
+  AppErrorReporter errorReporter = const DeveloperLogErrorReporter(),
+}) {
+  configureAppErrorReporter(errorReporter);
   runZonedGuarded(
     () {
       WidgetsFlutterBinding.ensureInitialized();
@@ -29,12 +34,53 @@ void main() {
         recordAppError('Unhandled asynchronous error', error, stackTrace);
         return true;
       };
+      ErrorWidget.builder = (details) => _ReleaseErrorFallback(
+        onRetry: () =>
+            runApp(GeauxParkApp(parkingRepository: _createParkingRepository())),
+      );
       runApp(GeauxParkApp(parkingRepository: _createParkingRepository()));
     },
     (error, stackTrace) {
       recordAppError('Unhandled application-zone error', error, stackTrace);
     },
   );
+}
+
+class _ReleaseErrorFallback extends StatelessWidget {
+  const _ReleaseErrorFallback({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    return Material(
+      color: AppColors.surface,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48),
+                const SizedBox(height: 16),
+                Text(strings.appProblemTitle, textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                Text(
+                  strings.appProblemDescription,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: onRetry, child: Text(strings.retry)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class GeauxParkApp extends StatelessWidget {

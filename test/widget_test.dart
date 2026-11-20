@@ -407,7 +407,7 @@ void main() {
           initiallySaved: false,
           onToggleSaved: (_) async {
             attempts++;
-            throw StateError('storage implementation details');
+            throw Exception('storage implementation details');
           },
         ),
       ),
@@ -445,7 +445,7 @@ void main() {
           initiallySaved: false,
           onReportAvailability: (_, _) async {
             attempts++;
-            throw StateError('report implementation details');
+            throw Exception('report implementation details');
           },
         ),
       ),

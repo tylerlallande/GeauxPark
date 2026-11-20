@@ -41,6 +41,6 @@ class LocalOccupancyReportRepository implements OccupancyReportRepository {
             .toList(growable: false)
           ..sort();
     final saved = await preferences.setStringList(storageKey, encoded);
-    if (!saved) throw StateError('Could not save occupancy report');
+    if (!saved) throw Exception('Could not save occupancy report');
   }
 }
