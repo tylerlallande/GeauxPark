@@ -21,6 +21,7 @@ Help students and football fans find parking before arriving at busy locations.
 - **Server-backed Catalog:** During the LAN demo, lot names, prices, permit access, availability, and coordinates load from the GeauxPark Dart API. The app automatically falls back to its bundled 18-lot catalog if the server or network is unavailable.
 - **Lot Tags & Filters:** Filter Home results by Visitor, Commuter, Residential, Greek housing, Law, Park & Geaux, Garage, or Event. Select any matching lot types and combine quick filters (such as Available now and Accessible). Search matches tag names, and Clear resets search and filters. Tags also appear in Saved, details, and the map's selected-lot card.
 - **Permit Eligibility:** Select LSU parking permits in the Profile tab to highlight eligible lots and dim restricted lots across the app.
+- **Best Match:** After permits are selected, Home ranks eligible lots using current availability, report freshness, and distance, then surfaces the strongest option for quick review and directions.
 - **User-Friendly Interface:** Navigate the app with a clean, modern design.
 - **Responsive Design:** Designed with usability across different screen sizes in mind.
 
@@ -185,9 +186,10 @@ The public OpenStreetMap tile endpoint is available only in debug builds or
 when the explicit classroom-demo flag is set. It is not silently used by an
 unconfigured production build.
 
-For tagged GitHub releases, add the template as the repository secret
-`GEAUXPARK_MAP_TILE_URL`. The release workflow intentionally stops instead of
-publishing an APK with an unconfigured map.
+For tagged GitHub releases, configure both `GEAUXPARK_MAP_TILE_URL` and the
+HTTPS `GEAUXPARK_API_URL` as repository secrets. The release workflow
+intentionally stops instead of publishing an APK with an unconfigured map or
+sample-only parking catalog.
 
 Find the Mac's Wi-Fi address:
 
@@ -204,6 +206,9 @@ state while the remaining workflow stays available.
 
 See the [MVP demo runbook](docs/mvp_demo_runbook.md) for the final preflight,
 recording flow, fallback plan, and release checklist.
+See the [student parking readiness plan](docs/student_parking_readiness_plan.md)
+for the production journey, completed safeguards, and remaining external
+launch requirements.
 
 ## Future Improvements
 

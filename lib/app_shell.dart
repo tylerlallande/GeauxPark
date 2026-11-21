@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -48,6 +49,7 @@ class _AppShellState extends State<AppShell> {
   final Set<String> _savingReportLotIds = {};
   bool _loadFailed = false;
   ParkingDataStatus? _dataStatus;
+  ValueListenable<ParkingDataStatus>? _dataStatusListenable;
   String? _mapDirectionsLotId;
   LatLng? _mapDirectionsOrigin;
   int? _swipePointer;
@@ -57,12 +59,41 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    final repository = widget.parkingRepository;
+    _bindDataStatus(widget.parkingRepository);
+    _loadSavedLots();
+    _loadParkingLots();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parkingRepository != widget.parkingRepository) {
+      _unbindDataStatus();
+      _bindDataStatus(widget.parkingRepository);
+    }
+  }
+
+  void _bindDataStatus(ParkingRepository repository) {
     if (repository is ParkingDataStatusProvider) {
       _dataStatus = (repository as ParkingDataStatusProvider).dataStatus;
     }
-    _loadSavedLots();
-    _loadParkingLots();
+    if (repository is ParkingDataStatusListenableProvider) {
+      _dataStatusListenable =
+          (repository as ParkingDataStatusListenableProvider)
+              .dataStatusListenable;
+      _dataStatusListenable!.addListener(_handleDataStatusChanged);
+    }
+  }
+
+  void _handleDataStatusChanged() {
+    final listenable = _dataStatusListenable;
+    if (!mounted || listenable == null) return;
+    setState(() => _dataStatus = listenable.value);
+  }
+
+  void _unbindDataStatus() {
+    _dataStatusListenable?.removeListener(_handleDataStatusChanged);
+    _dataStatusListenable = null;
   }
 
   Future<void> _loadParkingLots() async {
@@ -296,6 +327,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void dispose() {
+    _unbindDataStatus();
     _pageController.dispose();
     super.dispose();
   }
@@ -453,11 +485,11 @@ class _ParkingDataBanner extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final isLive = status.isLive;
     final message = switch (status.mode) {
-      ParkingDataMode.live => 'Live parking catalog connected',
-      ParkingDataMode.offlineSample =>
-        'Server unavailable — showing sample parking data',
-      ParkingDataMode.demo =>
-        'Demo mode — availability and prices are sample data',
+      ParkingDataMode.live => AppLocalizations.of(context).liveParkingConnected,
+      ParkingDataMode.offlineSample => AppLocalizations.of(
+        context,
+      ).serverUnavailableSampleData,
+      ParkingDataMode.demo => AppLocalizations.of(context).demoDataNotice,
     };
     return Semantics(
       liveRegion: true,

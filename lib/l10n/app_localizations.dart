@@ -88,6 +88,9 @@ class AppLocalizations {
     ParkingSpaceStatus.unavailable => 'unavailable',
   };
   String get quickFilters => 'Quick filters';
+  String get bestMatchForYou => 'Best match for you';
+  String get reviewLotAndDirections =>
+      'Review this lot, then get directions when you are ready.';
   String get lotTypes => 'Lot types';
   String get parkingNearLsu => 'Parking near LSU';
   String get findYourParking => 'Find your parking';
@@ -149,6 +152,15 @@ class AppLocalizations {
   String get appProblemTitle => 'GeauxPark ran into a problem.';
   String get appProblemDescription =>
       'Your saved parking and permit preferences are still on this device.';
+  String get liveParkingConnected => 'Live parking catalog connected';
+  String get serverUnavailableSampleData =>
+      'Server unavailable — showing sample parking data';
+  String get demoDataNotice =>
+      'Demo mode — availability and prices are sample data';
+  String worksWithPermit(bool eligible) =>
+      eligible ? 'Works with your permit' : 'Permit not accepted';
+  String saveLot(String lotName, {required bool saved}) =>
+      saved ? 'Unsave $lotName' : 'Save $lotName';
 }
 
 class _AppLocalizationsDelegate

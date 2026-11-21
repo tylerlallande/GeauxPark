@@ -72,7 +72,7 @@ void main() {
   });
 
   testWidgets(
-    'Home puts unowned permits last and updates when permits change',
+    'Home ranks useful permit matches first and updates when permits change',
     (tester) async {
       tester.view.physicalSize = const Size(1000, 2500);
       tester.view.devicePixelRatio = 1;
@@ -106,15 +106,15 @@ void main() {
           .toList();
       await render({ParkingPermit.visitor});
       expect(visibleIds(), [
-        'west-stadium-lot',
         'union-square-garage',
+        'west-stadium-lot',
         'nicholson-gateway',
       ]);
       await render({ParkingPermit.nicholsonGatewayResident});
       expect(visibleIds(), [
         'nicholson-gateway',
-        'west-stadium-lot',
         'union-square-garage',
+        'west-stadium-lot',
       ]);
       await render({});
       expect(visibleIds(), lots.map((lot) => lot.id).toList());

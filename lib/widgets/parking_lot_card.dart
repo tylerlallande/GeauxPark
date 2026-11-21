@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/parking_lot.dart';
 import '../models/parking_availability.dart';
+import '../l10n/app_localizations.dart';
 import 'availability_indicator.dart';
 import 'parking_lot_tags.dart';
 
@@ -131,7 +132,8 @@ class ParkingLotCard extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               IconButton(
-                tooltip: isSaved ? 'Unsave ${lot.name}' : 'Save ${lot.name}',
+                tooltip: AppLocalizations.of(context)
+                    .saveLot(lot.name, saved: isSaved),
                 isSelected: isSaved,
                 onPressed: onToggleSaved,
                 color: colors.primary,
@@ -166,7 +168,7 @@ class _PermitStatus extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          isEligible ? 'Works with your permit' : 'Permit not accepted',
+          AppLocalizations.of(context).worksWithPermit(isEligible),
           style: Theme.of(context).textTheme.labelMedium
               ?.copyWith(color: color, fontWeight: FontWeight.w800),
         ),

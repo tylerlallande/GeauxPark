@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 import '../models/parking_details.dart';
 import '../models/parking_lot_layout.dart';
@@ -15,6 +16,7 @@ class ApiParkingRepository
     implements
         ParkingRepository,
         ParkingDataStatusProvider,
+        ParkingDataStatusListenableProvider,
         ParkingLotLayoutRepository {
   ApiParkingRepository({
     required this.baseUri,
@@ -27,13 +29,25 @@ class ApiParkingRepository
   final ParkingRepository fallback;
   final Duration timeout;
   final http.Client _client;
-  ParkingDataStatus _dataStatus = ParkingDataStatus(
-    mode: ParkingDataMode.offlineSample,
-    checkedAt: DateTime.now(),
+  final ValueNotifier<ParkingDataStatus> _dataStatus = ValueNotifier(
+    ParkingDataStatus(
+      mode: ParkingDataMode.offlineSample,
+      checkedAt: DateTime.now(),
+    ),
   );
 
   @override
-  ParkingDataStatus get dataStatus => _dataStatus;
+  ParkingDataStatus get dataStatus => _dataStatus.value;
+
+  @override
+  ValueListenable<ParkingDataStatus> get dataStatusListenable => _dataStatus;
+
+  void _setDataStatus(ParkingDataMode mode) {
+    _dataStatus.value = ParkingDataStatus(
+      mode: mode,
+      checkedAt: DateTime.now(),
+    );
+  }
 
   @override
   Future<List<ParkingLot>> fetchParkingLots() async {
@@ -61,10 +75,7 @@ class ApiParkingRepository
           'Server returned an empty parking catalog.',
         );
       }
-      _dataStatus = ParkingDataStatus(
-        mode: ParkingDataMode.live,
-        checkedAt: DateTime.now(),
-      );
+      _setDataStatus(ParkingDataMode.live);
       return lots;
     } on TimeoutException catch (error, stackTrace) {
       return _fallbackParkingLots(error, stackTrace);
@@ -130,10 +141,7 @@ class ApiParkingRepository
           .get(baseUri.resolve('/parking-lots/${Uri.encodeComponent(lotId)}'))
           .timeout(timeout);
       if (response.statusCode == 404) {
-        _dataStatus = ParkingDataStatus(
-          mode: ParkingDataMode.offlineSample,
-          checkedAt: DateTime.now(),
-        );
+        _setDataStatus(ParkingDataMode.offlineSample);
         return await fallback.fetchParkingDetails(lotId);
       }
       if (response.statusCode != 200) {
@@ -151,10 +159,7 @@ class ApiParkingRepository
       // The server stores the identifier as `id`; the app model deliberately
       // uses `lotId` so it can remain independent from the transport format.
       payload['lotId'] ??= payload['id'] ?? lotId;
-      _dataStatus = ParkingDataStatus(
-        mode: ParkingDataMode.live,
-        checkedAt: DateTime.now(),
-      );
+      _setDataStatus(ParkingDataMode.live);
       return ParkingDetails.fromJson(payload);
     } on TimeoutException catch (error, stackTrace) {
       return _fallbackParkingDetails(lotId, error, stackTrace);
@@ -172,10 +177,7 @@ class ApiParkingRepository
     StackTrace stackTrace,
   ) {
     recordAppError('Parking catalog API unavailable', error, stackTrace);
-    _dataStatus = ParkingDataStatus(
-      mode: ParkingDataMode.offlineSample,
-      checkedAt: DateTime.now(),
-    );
+    _setDataStatus(ParkingDataMode.offlineSample);
     return fallback.fetchParkingLots();
   }
 
@@ -194,10 +196,7 @@ class ApiParkingRepository
     StackTrace stackTrace,
   ) {
     recordAppError('Parking details API unavailable', error, stackTrace);
-    _dataStatus = ParkingDataStatus(
-      mode: ParkingDataMode.offlineSample,
-      checkedAt: DateTime.now(),
-    );
+    _setDataStatus(ParkingDataMode.offlineSample);
     return fallback.fetchParkingDetails(lotId);
   }
 }

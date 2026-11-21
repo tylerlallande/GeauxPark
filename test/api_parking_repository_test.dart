@@ -79,6 +79,33 @@ void main() {
     expect(repository.dataStatus.mode, ParkingDataMode.offlineSample);
   });
 
+  test('notifies the UI when live data falls back offline', () async {
+    var requestCount = 0;
+    final repository = ApiParkingRepository(
+      baseUri: Uri.parse('https://parking.example.edu'),
+      fallback: const _FallbackRepository(),
+      client: MockClient((request) async {
+        requestCount++;
+        if (requestCount == 1) {
+          return http.Response(
+            '''{"lots":[{"id":"live","name":"Live","address":"LSU","distanceMiles":0.2,"priceLabel":"Check signs","permitTypes":["commuter"]}]}''',
+            200,
+          );
+        }
+        throw http.ClientException('offline', request.url);
+      }),
+    );
+    final modes = <ParkingDataMode>[];
+    repository.dataStatusListenable.addListener(
+      () => modes.add(repository.dataStatusListenable.value.mode),
+    );
+
+    await repository.fetchParkingLots();
+    await repository.fetchParkingLots();
+
+    expect(modes, [ParkingDataMode.live, ParkingDataMode.offlineSample]);
+  });
+
   test('loads a verified per-space layout from the server', () async {
     final repository = ApiParkingRepository(
       baseUri: Uri.parse('https://parking.example.edu'),

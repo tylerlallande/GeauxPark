@@ -4,8 +4,10 @@ import '../l10n/app_localizations.dart';
 import '../models/parking_lot.dart';
 import '../models/parking_permit.dart';
 import '../models/parking_availability.dart';
+import '../services/parking_recommendation_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/parking_lot_card.dart';
+import '../widgets/availability_indicator.dart';
 
 enum ParkingFilter { all, myPermits, available, free, accessible }
 
@@ -36,6 +38,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const _recommendations = ParkingRecommendationService();
   final Set<ParkingFilter> _selectedFilters = {};
   final Set<ParkingTag> _selectedTags = {};
   final TextEditingController _searchController = TextEditingController();
@@ -75,20 +78,21 @@ class _HomeScreenState extends State<HomeScreen> {
           _selectedTags.isEmpty || lot.tags.any(_selectedTags.contains);
       return matchesSearch && matchesFilters && matchesTags;
     }).toList();
-    // Keep the existing order within each permit group.
-    return [
-      ...matches.where(
-        (lot) =>
-            lot.eligibilityFor(widget.selectedPermits) !=
-            PermitEligibility.ineligible,
-      ),
-      ...matches.where(
-        (lot) =>
-            lot.eligibilityFor(widget.selectedPermits) ==
-            PermitEligibility.ineligible,
-      ),
-    ];
+    return _recommendations.rank(
+      lots: matches,
+      permits: widget.selectedPermits,
+      reports: widget.occupancyReports,
+    );
   }
+
+  ParkingRecommendation? get _bestRecommendation =>
+      widget.selectedPermits.isEmpty
+      ? null
+      : _recommendations.best(
+          lots: widget.lots,
+          permits: widget.selectedPermits,
+          reports: widget.occupancyReports,
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
               if (widget.selectedPermits.isEmpty) ...[
                 _PermitSetupBanner(onTap: widget.onManagePermits),
                 const SizedBox(height: 14),
+              ] else if (_bestRecommendation case final recommendation?) ...[
+                _BestMatchCard(
+                  recommendation: recommendation,
+                  onTap: () => widget.onLotSelected(recommendation.lot),
+                  occupancyReport:
+                      widget.occupancyReports[recommendation.lot.id],
+                ),
+                const SizedBox(height: 14),
               ],
               _GameDayBanner(onTap: widget.onGameDaySelected),
               const SizedBox(height: 20),
@@ -261,6 +273,83 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _BestMatchCard extends StatelessWidget {
+  const _BestMatchCard({
+    required this.recommendation,
+    required this.onTap,
+    required this.occupancyReport,
+  });
+
+  final ParkingRecommendation recommendation;
+  final VoidCallback onTap;
+  final OccupancyReport? occupancyReport;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final lot = recommendation.lot;
+    return Card(
+      color: colors.primaryContainer,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: const ValueKey('best-parking-match'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome_rounded, color: colors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      strings.bestMatchForYou,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: colors.primary),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(lot.name, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 6),
+              AvailabilityIndicator(
+                status: occupancyReport?.status ?? lot.availabilityStatus,
+                compact: true,
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final reason in recommendation.reasons)
+                    Chip(
+                      avatar: const Icon(Icons.check_rounded, size: 16),
+                      label: Text(reason),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                strings.reviewLotAndDirections,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.onPrimaryContainer),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
