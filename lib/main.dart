@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_shell.dart';
@@ -34,11 +35,10 @@ void runGeauxParkApp({
         recordAppError('Unhandled asynchronous error', error, stackTrace);
         return true;
       };
-      ErrorWidget.builder = (details) => _ReleaseErrorFallback(
-        onRetry: () =>
-            runApp(GeauxParkApp(parkingRepository: _createParkingRepository())),
-      );
-      runApp(GeauxParkApp(parkingRepository: _createParkingRepository()));
+      if (kReleaseMode) {
+        ErrorWidget.builder = (details) => const _ReleaseErrorFallback();
+      }
+      runApp(const _RestartableGeauxPark());
     },
     (error, stackTrace) {
       recordAppError('Unhandled application-zone error', error, stackTrace);
@@ -47,9 +47,7 @@ void runGeauxParkApp({
 }
 
 class _ReleaseErrorFallback extends StatelessWidget {
-  const _ReleaseErrorFallback({required this.onRetry});
-
-  final VoidCallback onRetry;
+  const _ReleaseErrorFallback();
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +71,40 @@ class _ReleaseErrorFallback extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: onRetry, child: Text(strings.retry)),
+                FilledButton(
+                  onPressed: () => _RestartableGeauxPark.restart(context),
+                  child: Text(strings.retry),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RestartableGeauxPark extends StatefulWidget {
+  const _RestartableGeauxPark();
+
+  static void restart(BuildContext context) {
+    context.findAncestorStateOfType<_RestartableGeauxParkState>()?.restart();
+  }
+
+  @override
+  State<_RestartableGeauxPark> createState() => _RestartableGeauxParkState();
+}
+
+class _RestartableGeauxParkState extends State<_RestartableGeauxPark> {
+  var _generation = 0;
+
+  void restart() => setState(() => _generation++);
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: ValueKey(_generation),
+      child: GeauxParkApp(parkingRepository: _createParkingRepository()),
     );
   }
 }

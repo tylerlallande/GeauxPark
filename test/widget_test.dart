@@ -217,6 +217,8 @@ void main() {
 
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
+    expect(find.text('Best match for you'), findsOneWidget);
+    expect(find.byKey(const ValueKey('best-parking-match')), findsOneWidget);
     await tester.tap(find.text('My permits'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(

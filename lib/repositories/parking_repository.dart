@@ -2,6 +2,8 @@ import '../models/parking_details.dart';
 import '../models/parking_lot_layout.dart';
 import '../models/parking_lot.dart';
 
+import 'package:flutter/foundation.dart';
+
 enum ParkingDataMode { live, offlineSample, demo }
 
 class ParkingDataStatus {
@@ -23,6 +25,11 @@ abstract interface class ParkingRepository {
 /// from. This keeps sample fallbacks from being mistaken for live occupancy.
 abstract interface class ParkingDataStatusProvider {
   ParkingDataStatus get dataStatus;
+}
+
+/// Implemented by repositories whose source can change while the app is open.
+abstract interface class ParkingDataStatusListenableProvider {
+  ValueListenable<ParkingDataStatus> get dataStatusListenable;
 }
 
 /// Optional capability for repositories that provide verified, per-space lot
