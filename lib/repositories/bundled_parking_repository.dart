@@ -5,31 +5,31 @@ import '../models/parking_lot_layout.dart';
 import '../models/parking_lot.dart';
 import 'parking_repository.dart';
 
-/// Temporary local implementation of [ParkingRepository].
+/// Verified campus reference data bundled with the app for poor connectivity.
 ///
-/// Replace this class with an API-backed implementation when the server
-/// contract is available. The screens only depend on [ParkingRepository].
-class DemoParkingRepository
+/// It never claims to provide live availability. Unknown values remain unknown
+/// until the production API or a recent user report supplies them.
+class BundledParkingRepository
     implements
         ParkingRepository,
         ParkingDataStatusProvider,
         ParkingLotLayoutRepository {
-  const DemoParkingRepository();
+  const BundledParkingRepository();
 
   @override
-  ParkingDataStatus get dataStatus =>
-      ParkingDataStatus(mode: ParkingDataMode.demo, checkedAt: DateTime.now());
+  ParkingDataStatus get dataStatus => ParkingDataStatus(
+    mode: ParkingDataMode.offlineReference,
+    checkedAt: DateTime.now(),
+  );
 
   @override
-  Future<List<ParkingLot>> fetchParkingLots() async {
-    return List.unmodifiable(sampleParkingLots);
-  }
+  Future<List<ParkingLot>> fetchParkingLots() async =>
+      List.unmodifiable(sampleParkingLots);
 
   @override
   Future<ParkingDetails?> fetchParkingDetails(String lotId) async {
     final payload = sampleParkingDetails[lotId];
-    if (payload == null) return null;
-    return ParkingDetails.fromJson(payload);
+    return payload == null ? null : ParkingDetails.fromJson(payload);
   }
 
   @override

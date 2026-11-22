@@ -18,10 +18,11 @@ Help students and football fans find parking before arriving at busy locations.
 - **Location Details:** View information about available parking options.
 - **Saved Parking:** Tap a lot's bookmark to save it, then open the Saved tab to find or remove it. Saved lots stay on the current device or browser after restarting the app.
 - **Campus Lots:** Browse 18 parking locations, including 15 additional lots verified against LSU's campus map. Newly imported lots show unknown availability rather than simulated space counts. See [location sources](docs/parking_locations.md).
-- **Server-backed Catalog:** During the LAN demo, lot names, prices, permit access, availability, and coordinates load from the GeauxPark Dart API. The app automatically falls back to its bundled 18-lot catalog if the server or network is unavailable.
+- **Server-backed Catalog:** Lot names, prices, permit access, availability, and coordinates load from the GeauxPark Dart API. If the live service is unavailable, the app clearly labels its bundled 18-lot campus reference and does not invent availability.
 - **Lot Tags & Filters:** Filter Home results by Visitor, Commuter, Residential, Greek housing, Law, Park & Geaux, Garage, or Event. Select any matching lot types and combine quick filters (such as Available now and Accessible). Search matches tag names, and Clear resets search and filters. Tags also appear in Saved, details, and the map's selected-lot card.
 - **Permit Eligibility:** Select LSU parking permits in the Profile tab to highlight eligible lots and dim restricted lots across the app.
 - **Best Match:** After permits are selected, Home ranks eligible lots using current availability, report freshness, and distance, then surfaces the strongest option for quick review and directions.
+- **Visitor Support:** Visitor lots show the current metered rate and enforcement hours supplied for LSU parking, while the Welcome Center entry explains temporary permits, guest arrangements, maps, and parking assistance.
 - **User-Friendly Interface:** Navigate the app with a clean, modern design.
 - **Responsive Design:** Designed with usability across different screen sizes in mind.
 
@@ -134,10 +135,10 @@ Connect the Mac and phone to the same Wi-Fi network, then run:
 ./tool/run_lan_demo.sh
 ```
 
-The launcher prints the exact URL to open on the phone and serves an optimized
+The local-preview launcher prints the exact URL to open on the phone and serves an optimized
 release build on port `8081` by default. It also starts the GeauxPark API on
 port `8080` and configures the Flutter app to use the Mac's LAN address. Keep
-the terminal open while using the demo, and press Ctrl+C to stop both services.
+the terminal open while using the preview, and press Ctrl+C to stop both services.
 To choose another app port, pass it as the first argument:
 
 ```bash
@@ -145,7 +146,7 @@ To choose another app port, pass it as the first argument:
 ```
 
 For development with hot reload, use debug mode. Debug builds are expected to
-feel slower and should not be used to judge phone-demo performance:
+feel slower and should not be used to judge phone performance:
 
 ```bash
 ./tool/run_lan_demo.sh --debug
@@ -156,7 +157,7 @@ Flutter/Dart. A VPN, guest Wi-Fi client isolation, or the macOS firewall can
 prevent the phone from reaching the Mac even when both devices show the same
 network name.
 
-To launch the demo manually instead, run:
+To launch the local preview manually instead, run:
 
 ```bash
 GEAUXPARK_HOST=0.0.0.0 PORT=8080 dart run server/bin/server.dart
@@ -172,7 +173,7 @@ flutter run -d web-server \
 ```
 
 Production API configuration accepts HTTPS only. The insecure-development flag
-is reserved for the local classroom demo and permits HTTP only for loopback or
+is reserved for local development and permits HTTP only for loopback or
 private local-network addresses; it does not allow public HTTP API hosts.
 
 Production releases must provide an approved HTTPS map-tile template:
@@ -183,13 +184,12 @@ flutter build web --release \
 ```
 
 The public OpenStreetMap tile endpoint is available only in debug builds or
-when the explicit classroom-demo flag is set. It is not silently used by an
+when the explicit local-development flag is set. It is not silently used by an
 unconfigured production build.
 
 For tagged GitHub releases, configure both `GEAUXPARK_MAP_TILE_URL` and the
 HTTPS `GEAUXPARK_API_URL` as repository secrets. The release workflow
-intentionally stops instead of publishing an APK with an unconfigured map or
-sample-only parking catalog.
+intentionally stops instead of publishing an APK with an unconfigured map or API.
 
 Find the Mac's Wi-Fi address:
 
@@ -198,9 +198,9 @@ ipconfig getifaddr en0
 ```
 
 With the phone connected to the same Wi-Fi network, open
-`http://<mac-ip-address>:8081` in its browser. The app, local sample parking
-data, map, filters, permit preferences, saved lots, and details are available
-in this demo. Mobile browsers can restrict precise location on plain HTTP LAN
+`http://<mac-ip-address>:8081` in its browser. The app, bundled campus reference,
+map, filters, permit preferences, saved lots, and details are available in the
+preview. Mobile browsers can restrict precise location on plain HTTP LAN
 addresses; if that happens, location-dependent directions show the app's retry
 state while the remaining workflow stays available.
 

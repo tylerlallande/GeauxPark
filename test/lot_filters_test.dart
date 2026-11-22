@@ -15,7 +15,16 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final availableLot = sampleParkingLots.firstWhere((lot) => lot.isAvailable);
+    final availableLot = ParkingLot(
+      id: 'reported-available',
+      name: 'Reported available lot',
+      address: 'LSU',
+      distanceMiles: 0.2,
+      priceLabel: 'Check signs',
+      spacesAvailable: 4,
+      isAccessible: true,
+      permitTypes: {ParkingPermit.commuter},
+    );
     final unknownLot = sampleParkingLots.firstWhere(
       (lot) => lot.spacesAvailable == null,
     );
@@ -122,7 +131,10 @@ void main() {
     },
   );
 
-  Future<void> showHome(WidgetTester tester) async {
+  Future<void> showHome(
+    WidgetTester tester, {
+    Map<String, OccupancyReport> occupancyReports = const {},
+  }) async {
     tester.view.physicalSize = const Size(1000, 1800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -136,6 +148,7 @@ void main() {
             selectedPermits: const {},
             onToggleSaved: null,
             onLotSelected: (_) {},
+            occupancyReports: occupancyReports,
           ),
         ),
       ),
@@ -151,7 +164,22 @@ void main() {
   testWidgets('lot types combine with quick filters and show an empty state', (
     tester,
   ) async {
-    await showHome(tester);
+    final reportedAt = DateTime.utc(2026, 11, 21);
+    await showHome(
+      tester,
+      occupancyReports: {
+        'union-square-garage': OccupancyReport(
+          lotId: 'union-square-garage',
+          status: ParkingAvailabilityStatus.available,
+          reportedAt: reportedAt,
+        ),
+        'nicholson-gateway': OccupancyReport(
+          lotId: 'nicholson-gateway',
+          status: ParkingAvailabilityStatus.available,
+          reportedAt: reportedAt,
+        ),
+      },
+    );
     await toggle(tester, 'lot-type-garage');
     expect(find.text('2 results'), findsOneWidget);
     await toggle(tester, 'quick-filter-available');

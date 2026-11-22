@@ -1,7 +1,7 @@
 # Parking details API contract
 
 The app reads parking detail data through `ParkingRepository`. The current
-`DemoParkingRepository` is temporary and can be replaced by an HTTP-backed
+`BundledParkingRepository` provides an offline reference and is wrapped by an HTTP-backed
 implementation without changing the screens.
 
 ## Endpoint

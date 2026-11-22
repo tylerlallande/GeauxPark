@@ -3,17 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'data/sample_game_day.dart';
 import 'data/sample_parking_lots.dart';
 import 'l10n/app_localizations.dart';
 import 'models/parking_lot.dart';
 import 'models/parking_details.dart';
 import 'models/parking_permit.dart';
 import 'models/parking_availability.dart';
-import 'repositories/demo_parking_repository.dart';
+import 'repositories/bundled_parking_repository.dart';
 import 'repositories/local_occupancy_report_repository.dart';
 import 'repositories/parking_repository.dart';
-import 'screens/game_day_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/parking_details_screen.dart';
 import 'screens/parking_map_screen.dart';
@@ -24,7 +22,7 @@ import 'utils/app_diagnostics.dart';
 class AppShell extends StatefulWidget {
   const AppShell({
     super.key,
-    this.parkingRepository = const DemoParkingRepository(),
+    this.parkingRepository = const BundledParkingRepository(),
   });
 
   final ParkingRepository parkingRepository;
@@ -332,18 +330,6 @@ class _AppShellState extends State<AppShell> {
     super.dispose();
   }
 
-  void _openGameDay() {
-    Navigator.of(context).push(
-      _smoothRoute(
-        GameDayScreen(
-          plan: sampleGameDayPlan,
-          lots: _parkingLots,
-          onLotSelected: _openParkingDetails,
-        ),
-      ),
-    );
-  }
-
   Route<void> _smoothRoute(Widget page) {
     return PageRouteBuilder<void>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -403,7 +389,6 @@ class _AppShellState extends State<AppShell> {
         savedLotIds: _savedLotIds,
         onToggleSaved: _preferences == null || _saving ? null : _toggleSaved,
         onLotSelected: _openParkingDetails,
-        onGameDaySelected: _openGameDay,
         selectedPermits: _selectedPermits,
         occupancyReports: _occupancyReports,
         onManagePermits: () => _selectTab(3),
@@ -486,10 +471,9 @@ class _ParkingDataBanner extends StatelessWidget {
     final isLive = status.isLive;
     final message = switch (status.mode) {
       ParkingDataMode.live => AppLocalizations.of(context).liveParkingConnected,
-      ParkingDataMode.offlineSample => AppLocalizations.of(
+      ParkingDataMode.offlineReference => AppLocalizations.of(
         context,
-      ).serverUnavailableSampleData,
-      ParkingDataMode.demo => AppLocalizations.of(context).demoDataNotice,
+      ).serverUnavailableReferenceData,
     };
     return Semantics(
       liveRegion: true,

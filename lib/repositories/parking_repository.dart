@@ -4,7 +4,7 @@ import '../models/parking_lot.dart';
 
 import 'package:flutter/foundation.dart';
 
-enum ParkingDataMode { live, offlineSample, demo }
+enum ParkingDataMode { live, offlineReference }
 
 class ParkingDataStatus {
   const ParkingDataStatus({required this.mode, required this.checkedAt});
@@ -22,7 +22,7 @@ abstract interface class ParkingRepository {
 }
 
 /// Implemented by repositories that can explain where displayed data came
-/// from. This keeps sample fallbacks from being mistaken for live occupancy.
+/// from. This keeps offline reference data from being mistaken for live occupancy.
 abstract interface class ParkingDataStatusProvider {
   ParkingDataStatus get dataStatus;
 }

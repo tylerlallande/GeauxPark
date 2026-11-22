@@ -20,7 +20,6 @@ class HomeScreen extends StatefulWidget {
     required this.onLotSelected,
     required this.selectedPermits,
     this.occupancyReports = const {},
-    this.onGameDaySelected,
     this.onManagePermits,
   });
 
@@ -30,7 +29,6 @@ class HomeScreen extends StatefulWidget {
   final ValueChanged<ParkingLot> onLotSelected;
   final Set<ParkingPermit> selectedPermits;
   final Map<String, OccupancyReport> occupancyReports;
-  final VoidCallback? onGameDaySelected;
   final VoidCallback? onManagePermits;
 
   @override
@@ -94,10 +92,18 @@ class _HomeScreenState extends State<HomeScreen> {
           reports: widget.occupancyReports,
         );
 
+  ParkingLot? get _welcomeCenter {
+    for (final lot in widget.lots) {
+      if (lot.id == 'welcome-center') return lot;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context);
+    final welcomeCenter = _welcomeCenter;
 
     return CustomScrollView(
       key: const PageStorageKey('home-scroll'),
@@ -231,8 +237,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 14),
               ],
-              _GameDayBanner(onTap: widget.onGameDaySelected),
-              const SizedBox(height: 20),
+              if (widget.selectedPermits.contains(ParkingPermit.visitor) &&
+                  welcomeCenter != null) ...[
+                _VisitorHelpCard(
+                  onTap: () => widget.onLotSelected(welcomeCenter),
+                ),
+                const SizedBox(height: 14),
+              ],
+              const SizedBox(height: 6),
               _SectionHeading(
                 title: strings.parkingNearLsu,
                 actionLabel: strings.results(_visibleLots.length),
@@ -273,6 +285,57 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _VisitorHelpCard extends StatelessWidget {
+  const _VisitorHelpCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: const ValueKey('welcome-center-help'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: colors.secondaryContainer,
+                foregroundColor: colors.onSecondaryContainer,
+                child: const Icon(Icons.info_outline_rounded),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.visitorHelpTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      strings.visitorHelpDescription,
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: colors.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: colors.primary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -488,70 +551,6 @@ class _SectionHeading extends StatelessWidget {
         else
           TextButton(onPressed: onAction, child: Text(actionLabel)),
       ],
-    );
-  }
-}
-
-class _GameDayBanner extends StatelessWidget {
-  const _GameDayBanner({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    final strings = AppLocalizations.of(context);
-    return Material(
-      color: colors.primary,
-      borderRadius: BorderRadius.circular(22),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colors.secondary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.sports_football_rounded,
-                  color: colors.primary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.gameDayParking,
-                      style: text.titleMedium?.copyWith(
-                        color: colors.onPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      strings.gameDayParkingHelp,
-                      style: text.bodySmall?.copyWith(
-                        color: AppColors.onPurpleMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (onTap != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                Icon(Icons.chevron_right_rounded, color: colors.secondary),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

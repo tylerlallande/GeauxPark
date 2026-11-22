@@ -10,8 +10,8 @@ import '../models/parking_lot.dart';
 import '../utils/app_diagnostics.dart';
 import 'parking_repository.dart';
 
-/// Loads parking details from the GeauxPark server and keeps the demo usable
-/// when the API is unavailable.
+/// Loads parking details from the GeauxPark server and retains verified campus
+/// reference data when the live API is unavailable.
 class ApiParkingRepository
     implements
         ParkingRepository,
@@ -31,7 +31,7 @@ class ApiParkingRepository
   final http.Client _client;
   final ValueNotifier<ParkingDataStatus> _dataStatus = ValueNotifier(
     ParkingDataStatus(
-      mode: ParkingDataMode.offlineSample,
+      mode: ParkingDataMode.offlineReference,
       checkedAt: DateTime.now(),
     ),
   );
@@ -141,7 +141,7 @@ class ApiParkingRepository
           .get(baseUri.resolve('/parking-lots/${Uri.encodeComponent(lotId)}'))
           .timeout(timeout);
       if (response.statusCode == 404) {
-        _setDataStatus(ParkingDataMode.offlineSample);
+        _setDataStatus(ParkingDataMode.offlineReference);
         return await fallback.fetchParkingDetails(lotId);
       }
       if (response.statusCode != 200) {
@@ -177,7 +177,7 @@ class ApiParkingRepository
     StackTrace stackTrace,
   ) {
     recordAppError('Parking catalog API unavailable', error, stackTrace);
-    _setDataStatus(ParkingDataMode.offlineSample);
+    _setDataStatus(ParkingDataMode.offlineReference);
     return fallback.fetchParkingLots();
   }
 
@@ -196,7 +196,7 @@ class ApiParkingRepository
     StackTrace stackTrace,
   ) {
     recordAppError('Parking details API unavailable', error, stackTrace);
-    _setDataStatus(ParkingDataMode.offlineSample);
+    _setDataStatus(ParkingDataMode.offlineReference);
     return fallback.fetchParkingDetails(lotId);
   }
 }

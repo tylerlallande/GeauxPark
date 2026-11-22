@@ -104,13 +104,6 @@ class AppLocalizations {
   String get lotTypeHelp =>
       'Choose any type. Quick filters narrow your results further.';
   String results(int count) => '$count results';
-  String get gameDay => 'Game day';
-  String get gameDayUnavailable =>
-      'Game-day parking status is not available yet.';
-  String get parkingStatus => 'Parking status';
-  String get gameDayTimeline => 'Game-day timeline';
-  String get yourGameDayPlan => 'Your game-day plan';
-  String lotsOpen(String label) => 'Lots open $label';
   String get yourParking => 'Your parking';
   String get parkingPermits => 'Parking permits';
   String get savedParkingLoadError => 'Could not load saved parking.';
@@ -134,9 +127,6 @@ class AppLocalizations {
   String selectedPermitCount(int count) =>
       '$count ${count == 1 ? 'permit' : 'permits'} selected';
   String get commandCenter => 'LSU PARKING COMMAND CENTER';
-  String get gameDayParking => 'Game-day parking';
-  String get gameDayParkingHelp =>
-      'Arrive early and check event rates before heading to campus.';
   String get noParkingFound => 'No parking found';
   String get noParkingFoundHelp =>
       'Try another search or choose a different filter.';
@@ -153,10 +143,11 @@ class AppLocalizations {
   String get appProblemDescription =>
       'Your saved parking and permit preferences are still on this device.';
   String get liveParkingConnected => 'Live parking catalog connected';
-  String get serverUnavailableSampleData =>
-      'Server unavailable — showing sample parking data';
-  String get demoDataNotice =>
-      'Demo mode — availability and prices are sample data';
+  String get serverUnavailableReferenceData =>
+      'Live service unavailable — availability may be out of date';
+  String get visitorHelpTitle => 'Visiting LSU? Start here';
+  String get visitorHelpDescription =>
+      'The Welcome Center offers visitor permits, parking help, maps, and directions.';
   String worksWithPermit(bool eligible) =>
       eligible ? 'Works with your permit' : 'Permit not accepted';
   String saveLot(String lotName, {required bool saved}) =>
