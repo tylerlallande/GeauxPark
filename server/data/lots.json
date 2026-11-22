@@ -4,8 +4,8 @@
     "name": "Union Square Garage",
     "address": "310 LSU Student Union",
     "distanceMiles": 0.2,
-    "priceLabel": "$8 event rate",
-    "spacesAvailable": 42,
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
+    "spacesAvailable": null,
     "isAccessible": true,
     "permitTypes": [
       "union-square-garage",
@@ -13,8 +13,8 @@
       "visitor"
     ],
     "gameDay": true,
-    "description": "Covered parking near the Student Union with convenient campus access.",
-    "hours": "Open daily, 6:00 AM–11:00 PM",
+    "description": "Visitor metered parking is available on floors 2–4 of Union Square Garage.",
+    "hours": "Metered parking is enforced weekdays, 7:00 AM–8:00 PM.",
     "eventRestrictions": "Event pricing and entry restrictions may apply on game days.",
     "amenities": [
       "Covered parking",
@@ -29,16 +29,16 @@
     "name": "West Stadium Lot",
     "address": "North Stadium Road",
     "distanceMiles": 0.4,
-    "priceLabel": "$12 event rate",
-    "spacesAvailable": 18,
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
+    "spacesAvailable": null,
     "isAccessible": true,
     "permitTypes": [
       "visitor",
       "event"
     ],
     "gameDay": true,
-    "description": "Surface parking within walking distance of Tiger Stadium.",
-    "hours": "Hours vary by campus event",
+    "description": "West Stadium Lot includes metered visitor parking. Check posted signs before leaving your vehicle.",
+    "hours": "Metered parking is enforced weekdays, 7:00 AM–8:00 PM.",
     "eventRestrictions": "A valid event permit may be required before kickoff.",
     "amenities": [
       "Accessible spaces",
@@ -53,7 +53,7 @@
     "address": "Nicholson Drive at Skip Bertman Drive",
     "distanceMiles": 0.8,
     "priceLabel": "Free after 5 PM",
-    "spacesAvailable": 67,
+    "spacesAvailable": null,
     "isAccessible": false,
     "permitTypes": [
       "nicholson-gateway-resident"
@@ -70,16 +70,17 @@
   {
     "id": "welcome-center",
     "name": "Visitor Parking (Welcome Center)",
-    "address": "Visitor parking · LSU campus",
-    "priceLabel": "Pay to park",
+    "address": "Highland Road at Dalrymple Drive",
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
     "spacesAvailable": null,
     "isAccessible": null,
     "permitTypes": [
       "visitor"
     ],
-    "description": "Visitor Parking (Welcome Center) is listed by LSU as Visitor parking.",
-    "eventRestrictions": "Check posted signs and LSU event notices before parking.",
-    "amenities": [],
+    "description": "The Welcome Center provides visitor parking passes, parking help, campus maps, and directions.",
+    "hours": "Metered parking: weekdays, 7:00 AM–8:00 PM. Campus parking and driving restrictions: weekdays, 7:00 AM–4:30 PM.",
+    "eventRestrictions": "$1.50 per hour. Temporary permits are $10 per day for eligible Zone 1, Zone 3, and All Zone lots. Always follow posted signs.",
+    "amenities": ["Visitor parking passes", "Guest and conference parking arrangements", "Reserved VIP parking assistance", "Campus maps and directions", "Up to five courtesy permit days for eligible students and employees"],
     "latitude": 30.416122,
     "longitude": -91.176949,
     "sourceUrl": "https://map.concept3d.com/?id=743#!m/344811",
@@ -91,7 +92,7 @@
     "id": "south-stadium-visitor",
     "name": "South Stadium Visitor Parking",
     "address": "Visitor parking · LSU campus",
-    "priceLabel": "Pay to park",
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
     "spacesAvailable": null,
     "isAccessible": null,
     "permitTypes": [
@@ -111,7 +112,7 @@
     "id": "thomas-boyd-visitor",
     "name": "Thomas Boyd Visitor Parking Lot (Tower Drive North \"B\")",
     "address": "Visitor parking · LSU campus",
-    "priceLabel": "Pay to park",
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
     "spacesAvailable": null,
     "isAccessible": null,
     "permitTypes": [
@@ -131,7 +132,7 @@
     "id": "touchdown-village-visitor",
     "name": "Touchdown Village Visitor Parking",
     "address": "Visitor parking · LSU campus",
-    "priceLabel": "Pay to park",
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
     "spacesAvailable": null,
     "isAccessible": null,
     "permitTypes": [
@@ -151,7 +152,7 @@
     "id": "parker-coliseum-visitor",
     "name": "Parker Coliseum Visitor Parking",
     "address": "Visitor parking · LSU campus",
-    "priceLabel": "Pay to park",
+    "priceLabel": "$1.50/hour weekdays, 7 AM–8 PM",
     "spacesAvailable": null,
     "isAccessible": null,
     "permitTypes": [

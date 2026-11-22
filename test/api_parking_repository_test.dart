@@ -65,7 +65,7 @@ void main() {
     expect(details?.description, 'Fallback data');
   });
 
-  test('labels fallback catalog data as an offline sample', () async {
+  test('labels fallback catalog data as an offline reference', () async {
     final repository = ApiParkingRepository(
       baseUri: Uri.parse('http://localhost:8080'),
       fallback: const _FallbackRepository(),
@@ -76,7 +76,7 @@ void main() {
 
     await repository.fetchParkingLots();
 
-    expect(repository.dataStatus.mode, ParkingDataMode.offlineSample);
+    expect(repository.dataStatus.mode, ParkingDataMode.offlineReference);
   });
 
   test('notifies the UI when live data falls back offline', () async {
@@ -103,7 +103,7 @@ void main() {
     await repository.fetchParkingLots();
     await repository.fetchParkingLots();
 
-    expect(modes, [ParkingDataMode.live, ParkingDataMode.offlineSample]);
+    expect(modes, [ParkingDataMode.live, ParkingDataMode.offlineReference]);
   });
 
   test('loads a verified per-space layout from the server', () async {

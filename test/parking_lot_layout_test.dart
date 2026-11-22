@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/data/sample_parking_lots.dart';
 import 'package:geauxpark/models/parking_lot_layout.dart';
-import 'package:geauxpark/repositories/demo_parking_repository.dart';
+import 'package:geauxpark/repositories/bundled_parking_repository.dart';
 import 'package:geauxpark/screens/parking_lot_layout_screen.dart';
 
 void main() {
@@ -62,7 +62,7 @@ void main() {
       MaterialApp(
         home: ParkingLotLayoutScreen(
           lot: lot,
-          repository: const DemoParkingRepository(),
+          repository: const BundledParkingRepository(),
         ),
       ),
     );

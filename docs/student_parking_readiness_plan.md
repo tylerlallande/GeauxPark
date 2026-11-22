@@ -18,7 +18,7 @@ available without interrupting that path.
 - Permit-aware eligibility throughout Home, Map, Saved, and details.
 - A ranked Best Match card instead of requiring students to compare every lot.
 - User reports override older bundled availability when recommendations rank.
-- Live, offline-sample, and demo modes remain visible and update reactively.
+- Live and offline-reference modes remain visible and update reactively.
 - Search, filters, saved lots, directions, safe failures, and mobile tab swipes.
 - Secure production API and map configuration with explicit LAN-demo exceptions.
 - Strict static analysis, unit/widget/integration tests, and an 80% CI coverage gate.
@@ -33,7 +33,7 @@ the client:
 - Contract an approved production map-tile provider and set
   `GEAUXPARK_MAP_TILE_URL`.
 - Obtain an authorized LSU or parking-operator availability feed. Until then,
-  availability must remain labeled as unknown, sample, or user-reported.
+  availability must remain labeled as unknown or user-reported.
 - Connect `AppErrorReporter` to an approved privacy-conscious crash service.
 - Validate the release APK on at least one low-end and one current Android phone,
   including denied location, poor network, large text, and outdoor visibility.
@@ -48,5 +48,5 @@ A public release is ready only when:
 - the production API and map secrets are configured;
 - the app displays live data without falling back during the smoke test;
 - permit selection, recommendation, lot details, and directions pass on-device;
-- offline/sample mode is unmistakable when the live service is unavailable;
+- offline-reference mode is unmistakable when the live service is unavailable;
 - crash reporting and the privacy notice have been approved.

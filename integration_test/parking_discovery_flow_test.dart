@@ -16,7 +16,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Demo mode — availability and prices are sample data'),
+      find.text('Live service unavailable — availability may be out of date'),
       findsOneWidget,
     );
     await tester.enterText(find.byType(SearchBar), 'Union Square');

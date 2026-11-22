@@ -9,7 +9,7 @@ import 'app_shell.dart';
 import 'config/parking_api_config.dart';
 import 'l10n/app_localizations.dart';
 import 'repositories/api_parking_repository.dart';
-import 'repositories/demo_parking_repository.dart';
+import 'repositories/bundled_parking_repository.dart';
 import 'repositories/parking_repository.dart';
 import 'theme/app_theme.dart';
 import 'utils/app_diagnostics.dart';
@@ -112,7 +112,7 @@ class _RestartableGeauxParkState extends State<_RestartableGeauxPark> {
 class GeauxParkApp extends StatelessWidget {
   const GeauxParkApp({
     super.key,
-    this.parkingRepository = const DemoParkingRepository(),
+    this.parkingRepository = const BundledParkingRepository(),
   });
 
   final ParkingRepository parkingRepository;
@@ -140,7 +140,7 @@ ParkingRepository _createParkingRepository() {
   const allowInsecureDevelopmentApi = bool.fromEnvironment(
     'GEAUXPARK_ALLOW_INSECURE_DEVELOPMENT_API',
   );
-  const fallback = DemoParkingRepository();
+  const fallback = BundledParkingRepository();
   final baseUri = parseParkingApiBaseUri(
     apiUrl,
     allowInsecureDevelopmentApi: allowInsecureDevelopmentApi,

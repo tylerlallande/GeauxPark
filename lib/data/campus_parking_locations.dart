@@ -25,9 +25,12 @@ class CampusParkingLocation {
   final ParkingPermit permit;
   final int sourceLocationId;
 
-  String get address => '$category parking · LSU campus';
-  String get priceLabel =>
-      permit == ParkingPermit.visitor ? 'Pay to park' : 'Permit required';
+  String get address => id == 'welcome-center'
+      ? 'Highland Road at Dalrymple Drive'
+      : '$category parking · LSU campus';
+  String get priceLabel => permit == ParkingPermit.visitor
+      ? r'$1.50/hour weekdays, 7 AM–8 PM'
+      : 'Permit required';
 
   // Approximate straight-line miles to the Student Union (LSU location 500347).
   double get distanceMiles {

@@ -590,9 +590,8 @@ class _DetailsDataNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final text = mode == ParkingDataMode.demo
-        ? 'Demo details — availability and pricing are sample data.'
-        : 'Offline details — showing sample data until the server reconnects.';
+    const text =
+        'Live service unavailable — verify availability and restrictions on posted signs.';
     return Semantics(
       liveRegion: true,
       child: Container(

@@ -111,13 +111,6 @@ void main() {
     expect(find.text('Find your parking'), findsOneWidget);
     expect(find.text('Quick filters'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('Game-day parking'),
-      200,
-      scrollable: homeScroll,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Game-day parking'), findsOneWidget);
-    await tester.scrollUntilVisible(
       find.text('Parking near LSU'),
       200,
       scrollable: homeScroll,
@@ -221,13 +214,23 @@ void main() {
     expect(find.byKey(const ValueKey('best-parking-match')), findsOneWidget);
     await tester.tap(find.text('My permits'));
     await tester.pumpAndSettle();
+    final nicholsonCard = find.byWidgetPredicate(
+      (widget) =>
+          widget is ParkingLotCard && widget.lot.id == 'nicholson-gateway',
+    );
     await tester.scrollUntilVisible(
-      find.text('Nicholson Gateway'),
+      nicholsonCard,
       300,
       scrollable: verticalScrollable().first,
     );
-    expect(find.text('Nicholson Gateway'), findsOneWidget);
-    expect(find.text('Union Square Garage'), findsNothing);
+    expect(nicholsonCard, findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is ParkingLotCard && widget.lot.id == 'union-square-garage',
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('parking search filters the visible results', (
@@ -302,51 +305,6 @@ void main() {
       scrollable: verticalScrollable().first,
     );
     expect(find.text('Covered parking'), findsOneWidget);
-  });
-
-  testWidgets('game-day banner opens the game-day plan', (tester) async {
-    await tester.pumpWidget(const GeauxParkApp());
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('Game-day parking'),
-      200,
-      scrollable: verticalScrollable().first,
-    );
-    await tester.tap(find.text('Game-day parking'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Game day'), findsOneWidget);
-    expect(find.text('Saturday home game'), findsOneWidget);
-    expect(find.text('Parking status'), findsOneWidget);
-    expect(find.text('FILLING FAST'), findsOneWidget);
-    expect(find.text('PERMIT ONLY'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('Before you go'),
-      300,
-      scrollable: verticalScrollable().first,
-    );
-    expect(find.text('Game-day timeline'), findsOneWidget);
-    expect(find.text('Before you go'), findsOneWidget);
-  });
-
-  testWidgets('game-day lot opens parking details', (tester) async {
-    await tester.pumpWidget(const GeauxParkApp());
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Game-day parking'),
-      200,
-      scrollable: verticalScrollable().first,
-    );
-    await tester.tap(find.text('Game-day parking'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('West Stadium Lot'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Parking details'), findsOneWidget);
-    expect(find.text('West Stadium Lot'), findsOneWidget);
   });
 
   testWidgets('details skeleton handles unavailable server data', (

@@ -1,6 +1,6 @@
 # Parking coordinates
 
-The app's map and demo details share `lib/data/parking_locations.dart`.
+The app's map and bundled offline details share `lib/data/parking_locations.dart`.
 The API fixture in `server/data/lots.json` uses the same coordinates; a
 regression test checks that these stay in sync.
 
@@ -20,7 +20,7 @@ complex's center. These are map locations, not surveyed entrance coordinates.
 
 `lib/data/campus_parking_locations.dart` adds 15 parking entries from LSU's
 Parking & Transportation map categories. It is shared by the app's lot list,
-marker locations, and demo details. Each entry retains its official map location
+marker locations, and offline reference details. Each entry retains its official map location
 ID; open `https://map.concept3d.com/?id=743#!m/LOCATION_ID` to view the source.
 
 | Lot | Location ID | Map category |
@@ -50,4 +50,6 @@ straight-line miles to the Student Union (source location 500347), labeled
 "to Union"; they are not walking-route distances. Permit tags reflect the
 source's primary category, not a complete authorization policy for every permit.
 
-The original three demo lots retain their existing sample availability and rates.
+No bundled lot claims live availability. Visitor lots use the published metered
+rate and enforcement window; current availability comes from the production
+service or recent user reports.
