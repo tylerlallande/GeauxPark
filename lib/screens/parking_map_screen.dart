@@ -155,10 +155,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screen,
-        AppSpacing.section,
-        AppSpacing.screen,
         AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,15 +167,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             strings.parkingMapTitle,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
+          if (_showRoute) ...[
+            const SizedBox(height: 4),
+            Text(
+              strings.directionsTo(_selectedLot.name),
+              style: Theme.of(context).textTheme.bodyLarge
+                  ?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: 6),
-          Text(
-            _showRoute
-                ? strings.directionsTo(_selectedLot.name)
-                : strings.exploreParkingNearLsu,
-            style: Theme.of(context).textTheme.bodyLarge
-                ?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 10),
           const ParkingAvailabilityLegend(),
           const SizedBox(height: 6),
           SizedBox(
@@ -212,7 +212,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             const SizedBox(height: 8),
             const ParkingPermitLegend(),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 8),
           Expanded(
             child: Column(
               children: [
@@ -514,7 +514,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           if (matchingLots.isEmpty)
             Text(strings.noMatchingParking)
           else ...[

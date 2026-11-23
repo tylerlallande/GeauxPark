@@ -68,7 +68,7 @@ class ApiParkingRepository
       }
       final lots = (decoded['lots'] as List<dynamic>)
           .whereType<Map<String, dynamic>>()
-          .map(ParkingLot.fromJson)
+          .map((item) => _parseApiRecord<ParkingLot>(item, ParkingLot.fromJson))
           .toList(growable: false);
       if (lots.isEmpty) {
         throw const ParkingRepositoryException(
@@ -114,7 +114,10 @@ class ApiParkingRepository
       }
       final payload = Map<String, dynamic>.from(decoded);
       payload['lotId'] ??= payload['id'] ?? lotId;
-      return ParkingLotLayout.fromJson(payload);
+      return _parseApiRecord<ParkingLotLayout>(
+        payload,
+        ParkingLotLayout.fromJson,
+      );
     } on TimeoutException catch (error, stackTrace) {
       recordAppError('Parking layout API unavailable', error, stackTrace);
       return _fallbackParkingLotLayout(lotId);
@@ -159,8 +162,12 @@ class ApiParkingRepository
       // The server stores the identifier as `id`; the app model deliberately
       // uses `lotId` so it can remain independent from the transport format.
       payload['lotId'] ??= payload['id'] ?? lotId;
+      final details = _parseApiRecord<ParkingDetails>(
+        payload,
+        ParkingDetails.fromJson,
+      );
       _setDataStatus(ParkingDataMode.live);
-      return ParkingDetails.fromJson(payload);
+      return details;
     } on TimeoutException catch (error, stackTrace) {
       return _fallbackParkingDetails(lotId, error, stackTrace);
     } on http.ClientException catch (error, stackTrace) {
@@ -169,6 +176,19 @@ class ApiParkingRepository
       return _fallbackParkingDetails(lotId, error, stackTrace);
     } on ParkingRepositoryException catch (error, stackTrace) {
       return _fallbackParkingDetails(lotId, error, stackTrace);
+    }
+  }
+
+  T _parseApiRecord<T>(
+    Map<String, dynamic> payload,
+    T Function(Map<String, dynamic>) parse,
+  ) {
+    try {
+      return parse(payload);
+    } on TypeError {
+      // Model casts validate untrusted JSON field types. Translate failures
+      // only at this parsing boundary; errors from requests still propagate.
+      throw const FormatException('Invalid parking API field type.');
     }
   }
 

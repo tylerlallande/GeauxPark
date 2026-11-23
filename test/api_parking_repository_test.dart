@@ -8,6 +8,50 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  for (final body in [
+    '{"id":"lot","latitude":"invalid"}',
+    '{"id":"lot","amenities":42}',
+    '{"id":42}',
+  ]) {
+    test('invalid detail fields use reference data: $body', () async {
+      final repository = ApiParkingRepository(
+        baseUri: Uri.parse('https://parking.example.edu'),
+        fallback: const _FallbackRepository(),
+        client: MockClient((_) async => http.Response(body, 200)),
+      );
+      final details = await repository.fetchParkingDetails('lot');
+      expect(details?.description, 'Fallback data');
+      expect(repository.dataStatus.isLive, isFalse);
+    });
+  }
+
+  test('invalid catalog fields use reference data', () async {
+    final repository = ApiParkingRepository(
+      baseUri: Uri.parse('https://parking.example.edu'),
+      fallback: const _FallbackRepository(),
+      client: MockClient(
+        (_) async => http.Response(
+          '{"lots":[{"id":"lot","spacesAvailable":"invalid"}]}',
+          200,
+        ),
+      ),
+    );
+    expect(await repository.fetchParkingLots(), isEmpty);
+    expect(repository.dataStatus.isLive, isFalse);
+  });
+
+  test('invalid layout fields use the layout fallback', () async {
+    final repository = ApiParkingRepository(
+      baseUri: Uri.parse('https://parking.example.edu'),
+      fallback: const _FallbackRepository(),
+      client: MockClient(
+        (_) async =>
+            http.Response('{"lotId":"lot","sourceLabel":42,"spaces":[]}', 200),
+      ),
+    );
+    expect(await repository.fetchParkingLotLayout('lot'), isNull);
+  });
+
   test('loads the parking catalog, prices, permits, and coordinates', () async {
     final repository = ApiParkingRepository(
       baseUri: Uri.parse('http://localhost:8080'),

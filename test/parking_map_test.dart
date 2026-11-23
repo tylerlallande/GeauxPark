@@ -141,7 +141,7 @@ void main() {
       }
       await tester.pumpAndSettle();
       expect(find.text('Nicholson Gateway'), findsOneWidget);
-      expect(find.text('Explore parking near LSU'), findsOneWidget);
+      expect(find.text('Directions to Union Square Garage'), findsNothing);
       expect(find.text('Calculate driving directions?'), findsNothing);
       expect(find.text('Old failure'), findsNothing);
       expect(find.text('Route unavailable'), findsNothing);
@@ -295,7 +295,7 @@ void main() {
           await tester.pumpAndSettle();
         }
         expect(find.text('Nicholson Gateway'), findsOneWidget);
-        expect(find.text('Explore parking near LSU'), findsOneWidget);
+        expect(find.text('Directions to Union Square Garage'), findsNothing);
         expect(find.byType(PolylineLayer), findsNothing);
         expect(find.text('Old lot route'), findsNothing);
         expect(find.text('Driving directions'), findsNothing);
