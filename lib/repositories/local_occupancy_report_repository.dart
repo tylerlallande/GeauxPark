@@ -11,6 +11,8 @@ class LocalOccupancyReportRepository implements OccupancyReportRepository {
   final SharedPreferences preferences;
 
   static const storageKey = 'parking_occupancy_reports_v1';
+  // AppShell creates a repository per save, so the queue must be shared.
+  static Future<void>? _pendingWrite;
 
   @override
   Future<Map<String, OccupancyReport>> loadReports() async {
@@ -32,7 +34,25 @@ class LocalOccupancyReportRepository implements OccupancyReportRepository {
   }
 
   @override
-  Future<void> saveReport(OccupancyReport report) async {
+  Future<void> saveReport(OccupancyReport report) {
+    final pending = _pendingWrite;
+    final write = pending == null
+        ? _saveReport(report)
+        : pending.then((_) => _saveReport(report));
+    // Return the original failure to the caller while keeping later saves alive.
+    late final Future<void> tail;
+    void releaseQueue() {
+      if (identical(_pendingWrite, tail)) _pendingWrite = null;
+    }
+    tail = write.then<void>(
+      (_) => releaseQueue(),
+      onError: (Object error, StackTrace stackTrace) => releaseQueue(),
+    );
+    _pendingWrite = tail;
+    return write;
+  }
+
+  Future<void> _saveReport(OccupancyReport report) async {
     final reports = await loadReports();
     reports[report.lotId] = report;
     final encoded =

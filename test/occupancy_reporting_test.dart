@@ -8,8 +8,68 @@ import 'package:geauxpark/repositories/local_occupancy_report_repository.dart';
 import 'package:geauxpark/widgets/availability_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _FailingReportRepository extends LocalOccupancyReportRepository {
+  const _FailingReportRepository(super.preferences);
+
+  @override
+  Future<Map<String, OccupancyReport>> loadReports() async {
+    throw Exception('Storage unavailable');
+  }
+}
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test('overlapping saves across repositories preserve every report', () async {
+    final preferences = await SharedPreferences.getInstance();
+    final reports = [
+      OccupancyReport(
+        lotId: 'union-square-garage',
+        status: ParkingAvailabilityStatus.full,
+        reportedAt: DateTime.utc(2026, 11, 23),
+      ),
+      OccupancyReport(
+        lotId: 'west-stadium-lot',
+        status: ParkingAvailabilityStatus.available,
+        reportedAt: DateTime.utc(2026, 11, 23, 1),
+      ),
+      OccupancyReport(
+        lotId: 'union-square-garage',
+        status: ParkingAvailabilityStatus.fillingUp,
+        reportedAt: DateTime.utc(2026, 11, 23, 2),
+      ),
+    ];
+    await Future.wait([
+      for (final report in reports)
+        LocalOccupancyReportRepository(preferences).saveReport(report),
+    ]);
+    final loaded = await LocalOccupancyReportRepository(preferences)
+        .loadReports();
+    expect(
+      loaded.keys,
+      unorderedEquals(['union-square-garage', 'west-stadium-lot']),
+    );
+    for (final report in reports.skip(1)) {
+      expect(loaded[report.lotId]?.toJson(), report.toJson());
+    }
+  });
+
+  test('a failed queued save does not prevent the next save', () async {
+    final preferences = await SharedPreferences.getInstance();
+    final report = OccupancyReport(
+      lotId: 'west-stadium-lot',
+      status: ParkingAvailabilityStatus.available,
+      reportedAt: DateTime.utc(2026, 11, 23),
+    );
+    final failed = _FailingReportRepository(preferences).saveReport(report);
+    final succeeded = LocalOccupancyReportRepository(preferences)
+        .saveReport(report);
+    await expectLater(failed, throwsException);
+    await succeeded;
+    final loaded = await LocalOccupancyReportRepository(preferences)
+        .loadReports();
+    expect(loaded[report.lotId]?.toJson(), report.toJson());
+  });
 
   test('occupancy reports persist with their status and timestamp', () async {
     final preferences = await SharedPreferences.getInstance();
