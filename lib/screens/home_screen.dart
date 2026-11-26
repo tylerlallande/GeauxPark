@@ -49,8 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<ParkingLot> get _visibleLots {
+    final normalizedQuery = _query.trim().toLowerCase();
     final matches = widget.lots.where((lot) {
-      final normalizedQuery = _query.trim().toLowerCase();
       final matchesSearch =
           normalizedQuery.isEmpty ||
           lot.name.toLowerCase().contains(normalizedQuery) ||
@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final matchesTags =
           _selectedTags.isEmpty || lot.tags.any(_selectedTags.contains);
       return matchesSearch && matchesFilters && matchesTags;
-    }).toList();
+    });
     return _recommendations.rank(
       lots: matches,
       permits: widget.selectedPermits,
@@ -83,11 +83,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  ParkingRecommendation? get _bestRecommendation =>
+  ParkingRecommendation? _bestRecommendation(List<ParkingLot> visibleLots) =>
       widget.selectedPermits.isEmpty
       ? null
       : _recommendations.best(
-          lots: widget.lots,
+          lots: visibleLots,
           permits: widget.selectedPermits,
           reports: widget.occupancyReports,
         );
@@ -104,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context);
     final welcomeCenter = _welcomeCenter;
+    final visibleLots = _visibleLots;
 
     return CustomScrollView(
       key: const PageStorageKey('home-scroll'),
@@ -228,7 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
               if (widget.selectedPermits.isEmpty) ...[
                 _PermitSetupBanner(onTap: widget.onManagePermits),
                 const SizedBox(height: 14),
-              ] else if (_bestRecommendation case final recommendation?) ...[
+              ] else if (_bestRecommendation(visibleLots)
+                  case final recommendation?) ...[
                 _BestMatchCard(
                   recommendation: recommendation,
                   onTap: () => widget.onLotSelected(recommendation.lot),
@@ -247,13 +249,13 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 6),
               _SectionHeading(
                 title: strings.parkingNearLsu,
-                actionLabel: strings.results(_visibleLots.length),
+                actionLabel: strings.results(visibleLots.length),
               ),
               const SizedBox(height: 12),
             ],
           ),
         ),
-        if (_visibleLots.isEmpty)
+        if (visibleLots.isEmpty)
           const SliverFillRemaining(
             hasScrollBody: false,
             child: _EmptyResults(),
@@ -267,19 +269,18 @@ class _HomeScreenState extends State<HomeScreen> {
               28,
             ),
             sliver: SliverList.separated(
-              itemCount: _visibleLots.length,
+              itemCount: visibleLots.length,
               itemBuilder: (context, index) => ParkingLotCard(
-                lot: _visibleLots[index],
-                isSaved: widget.savedLotIds.contains(_visibleLots[index].id),
+                lot: visibleLots[index],
+                isSaved: widget.savedLotIds.contains(visibleLots[index].id),
                 onToggleSaved: widget.onToggleSaved == null
                     ? null
-                    : () => widget.onToggleSaved!(_visibleLots[index]),
-                onTap: () => widget.onLotSelected(_visibleLots[index]),
-                permitEligibility: _visibleLots[index].eligibilityFor(
+                    : () => widget.onToggleSaved!(visibleLots[index]),
+                onTap: () => widget.onLotSelected(visibleLots[index]),
+                permitEligibility: visibleLots[index].eligibilityFor(
                   widget.selectedPermits,
                 ),
-                occupancyReport:
-                    widget.occupancyReports[_visibleLots[index].id],
+                occupancyReport: widget.occupancyReports[visibleLots[index].id],
               ),
               separatorBuilder: (_, _) => const SizedBox(height: 12),
             ),
