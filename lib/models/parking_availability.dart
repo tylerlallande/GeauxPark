@@ -38,8 +38,11 @@ class OccupancyReport {
 
   static OccupancyReport? fromJson(Map<String, dynamic> json) {
     final lotId = json['lotId'];
-    final status = parkingAvailabilityStatusFromId(json['status'] as String?);
-    final reportedAt = DateTime.tryParse(json['reportedAt'] as String? ?? '');
+    final statusId = json['status'];
+    final timestamp = json['reportedAt'];
+    if (statusId is! String || timestamp is! String) return null;
+    final status = parkingAvailabilityStatusFromId(statusId);
+    final reportedAt = DateTime.tryParse(timestamp);
     if (lotId is! String ||
         lotId.isEmpty ||
         status == null ||

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geauxpark/main.dart';
 import 'package:geauxpark/models/parking_availability.dart';
+import 'package:geauxpark/models/parking_permit.dart';
 import 'package:geauxpark/repositories/local_occupancy_report_repository.dart';
+import 'package:geauxpark/screens/permit_preferences_screen.dart';
 import 'package:geauxpark/widgets/availability_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +21,65 @@ class _FailingReportRepository extends LocalOccupancyReportRepository {
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test(
+    'wrongly typed report fields are skipped without hiding valid reports',
+    () async {
+      final valid = OccupancyReport(
+        lotId: 'west-stadium-lot',
+        status: ParkingAvailabilityStatus.available,
+        reportedAt: DateTime.utc(2026, 11, 25),
+      );
+      SharedPreferences.setMockInitialValues({
+        LocalOccupancyReportRepository.storageKey: [
+          for (final field in ['lotId', 'status', 'reportedAt'])
+            for (final value in [
+              null,
+              42,
+              true,
+              <String>[],
+              <String, String>{},
+            ])
+              jsonEncode({...valid.toJson(), field: value}),
+          jsonEncode(valid.toJson()),
+        ],
+      });
+      final preferences = await SharedPreferences.getInstance();
+      final reports = await LocalOccupancyReportRepository(preferences)
+          .loadReports();
+      expect(reports.keys, [valid.lotId]);
+      expect(reports[valid.lotId]?.toJson(), valid.toJson());
+    },
+  );
+
+  testWidgets('malformed reports do not block saved lots or permits', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'saved_parking_lot_ids': ['union-square-garage'],
+      'selected_parking_permit_ids': ['visitor'],
+      LocalOccupancyReportRepository.storageKey: [
+        '{"lotId":"union-square-garage","status":42,"reportedAt":false}',
+      ],
+    });
+    await tester.pumpWidget(const GeauxParkApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saved'));
+    await tester.pumpAndSettle();
+    expect(find.text('Union Square Garage'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    final permits = tester.widget<PermitPreferencesScreen>(
+      find.byType(PermitPreferencesScreen),
+    );
+    expect(permits.isLoading, isFalse);
+    expect(
+      permits.selectedPermits.map((permit) => permit.id),
+      contains('visitor'),
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   test('overlapping saves across repositories preserve every report', () async {
     final preferences = await SharedPreferences.getInstance();
