@@ -114,6 +114,13 @@ void main() {
           .map((card) => card.lot.id)
           .toList();
       await render({ParkingPermit.visitor});
+      expect(find.byKey(const ValueKey('best-parking-match')), findsOneWidget);
+      await tester.enterText(find.byType(SearchBar), 'Nicholson');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('best-parking-match')), findsNothing);
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('best-parking-match')), findsOneWidget);
       expect(visibleIds(), [
         'union-square-garage',
         'west-stadium-lot',
